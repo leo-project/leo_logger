@@ -1,0 +1,13 @@
+{application, leo_logger,
+  [
+    {description, "Leo Logger"},
+    {vsn, "0.9.0"},
+    {id, "leo_logger"},
+    {registered,   []},
+    {applications, [kernel, stdlib]},
+    {mod, {leo_logger_app, []}},
+    {env, [{profile,       false},
+           {zmq_bind_port, 10501}
+          ]}
+  ]
+}.
