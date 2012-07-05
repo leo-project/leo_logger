@@ -65,10 +65,11 @@ new(Id, Appender, [_M, _F] = Callback, RootPath, FileName, Level) ->
     io:format("id:~p, path:~p, filename:~p~n", [Id, RootPath, FileName]),
 
     ok = start_app(),
-    case (string:len(RootPath) == string:rstr(RootPath, "/")) of
-        true  -> NewRootPath = RootPath;
-        false -> NewRootPath = RootPath ++ "/"
-    end,
+    NewRootPath = 
+        case (string:len(RootPath) == string:rstr(RootPath, "/")) of
+            true  -> RootPath;
+            false -> RootPath ++ "/"
+        end,
 
     case supervisor:start_child(leo_logger_sup,
                                 [Id, Appender, Callback, [{?FILE_PROP_ROOT_PATH, NewRootPath},

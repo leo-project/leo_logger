@@ -112,15 +112,17 @@ fatal(Log) -> leo_logger_api:append(?LOG_GROUP_ERROR, Log, 4).
 format(Appender, Log) ->
     #message_log{format  = Format,
                  message = Message} = Log,
-    case catch io_lib:format(Format, Message) of
-        {'EXIT', _} -> FormattedMessage = [];
-        NewMessage  -> FormattedMessage = NewMessage
-    end,
+    FormattedMessage =
+        case catch io_lib:format(Format, Message) of
+            {'EXIT', _} -> [];
+            NewMessage  -> NewMessage
+        end,
 
-    case Appender of
-        ?LOG_APPENDER_FILE -> Output = text;
-        _Other             -> Output = json
-    end,
+    Output =
+        case Appender of
+            ?LOG_APPENDER_FILE -> text;
+            _Other             -> json
+        end,
     format1(Output, Log#message_log{message = FormattedMessage}).
 
 %% @private

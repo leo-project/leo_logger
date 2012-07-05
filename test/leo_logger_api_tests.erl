@@ -107,19 +107,18 @@ inspect() ->
     ok.
 
 
-zmq_pull_server() ->
-    {ok,Context} = erlzmq:context(),
-    {ok ,Receiver} = erlzmq:socket(Context, pull),
-    ok = erlzmq:connect(Receiver, "tcp://localhost:10501"),
-    loop(Receiver),
+%% zmq_pull_server() ->
+%%     {ok,Context} = erlzmq:context(),
+%%     {ok ,Receiver} = erlzmq:socket(Context, pull),
+%%     ok = erlzmq:connect(Receiver, "tcp://localhost:10501"),
+%%     loop(Receiver),
+%%     ok = erlzmq:close(Receiver),
+%%     ok = erlzmq:term(Context),
+%%     ok.
 
-    ok = erlzmq:close(Receiver),
-    ok = erlzmq:term(Context),
-    ok.
-
-loop(Receiver) ->
-    {ok, Message} = erlzmq:recv(Receiver),
-    loop(Receiver).
+%% loop(Receiver) ->
+%%     {ok, Message} = erlzmq:recv(Receiver),
+%%     loop(Receiver).
 
 -endif.
 

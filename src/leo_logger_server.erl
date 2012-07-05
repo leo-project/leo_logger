@@ -109,10 +109,10 @@ handle_call({stop, Id}, _From, State) ->
 %%                                      {stop, Reason, State}
 %% Description: Handling cast messages
 handle_cast({append, {Id, Log, Level}}, #logger_state{level = RegisteredLevel} = State) ->
-    case (Level >= RegisteredLevel) of
-        true  -> NewState = append_sub(Id, Log, State);
-        false -> NewState = State
-    end,
+    NewState = case (Level >= RegisteredLevel) of
+                   true  -> append_sub(Id, Log, State);
+                   false -> State
+               end,
     {noreply, NewState};
 
 handle_cast({rotate, Id}, State) ->

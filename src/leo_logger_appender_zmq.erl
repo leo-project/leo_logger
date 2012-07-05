@@ -56,10 +56,10 @@ init(Appender, Callback, Props) ->
 -spec(append(binary(), #logger_state{}) ->
              ok).
 append(Json, _State) ->
-    case application:get_env(leo_logger, zmq_bind_port) of
-        undefined   -> Port = ?DEF_ZMQ_BIND_PORT;
-        {ok, Value} -> Port = Value
-    end,
+    Port = case application:get_env(leo_logger, zmq_bind_port) of
+               undefined   -> ?DEF_ZMQ_BIND_PORT;
+               {ok, Value} -> Value
+           end,
 
     {ok, Context} = erlzmq:context(),
     {ok, Sender} = erlzmq:socket(Context, push),

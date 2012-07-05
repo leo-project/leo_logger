@@ -164,12 +164,10 @@ print(Binary, Max, Options) when is_binary(Binary) ->
 %% a list of integers (as expected) but with a trailing binary that represents
 %% the remaining bits.
 print(BitString, Max, Options) when is_bitstring(BitString) ->
-    case byte_size(BitString) > Max of
-        true ->
-            BL = binary_to_list(BitString, 1, Max);
-        _ ->
-            BL = erlang:bitstring_to_list(BitString)
-    end,
+    BL = case byte_size(BitString) > Max of
+             true -> binary_to_list(BitString, 1, Max);
+             _    -> erlang:bitstring_to_list(BitString)
+         end,
     {X, Len0} = list_body(BL, Max - 4, Options, false),
     {["<<", X, ">>"], Len0 + 4};
 
