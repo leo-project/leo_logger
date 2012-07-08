@@ -44,8 +44,7 @@
 logger_test_() ->
     {foreach, fun setup/0, fun teardown/1,
      [{with, [T]} || T <- [fun append_/1,
-                           fun message_1_/1,
-                           fun message_2_/1
+                           fun message_1_/1
                           ]]}.
 
 setup() ->
@@ -74,12 +73,6 @@ message_1_(_) ->
     inspect(),
     ok.
 
-message_2_(_) ->
-    ok = leo_logger_client_message:new(?TEST_LOG_DIR, 0, [{?LOG_ID_ZMQ,  ?LOG_APPENDER_ZMQ},
-                                                          {?LOG_ID_AMQP, ?LOG_APPENDER_AMQP}]),
-    inspect(),
-    timer:sleep(1000),
-    ok.
 
 %%--------------------------------------------------------------------
 %%% INNER FUNCTIONS
@@ -105,20 +98,6 @@ inspect() ->
     ?assertEqual(true, (Res2 /= [])),
     ?assertEqual(true, (Res3 /= [])),
     ok.
-
-
-%% zmq_pull_server() ->
-%%     {ok,Context} = erlzmq:context(),
-%%     {ok ,Receiver} = erlzmq:socket(Context, pull),
-%%     ok = erlzmq:connect(Receiver, "tcp://localhost:10501"),
-%%     loop(Receiver),
-%%     ok = erlzmq:close(Receiver),
-%%     ok = erlzmq:term(Context),
-%%     ok.
-
-%% loop(Receiver) ->
-%%     {ok, Message} = erlzmq:recv(Receiver),
-%%     loop(Receiver).
 
 -endif.
 
