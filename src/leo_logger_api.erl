@@ -26,7 +26,7 @@
 -module(leo_logger_api).
 
 -author('Yosuke Hara').
--vsn('0.9.0').
+-vsn('0.9.1').
 
 -include("leo_logger.hrl").
 -include_lib("eunit/include/eunit.hrl").

@@ -26,7 +26,7 @@
 %%======================================================================
 -module(leo_logger_error_logger_h).
 
--vsn('0.9.0').
+-vsn('0.9.1').
 
 -behaviour(gen_event).
 
@@ -156,7 +156,7 @@ handle_event(Event, State) ->
                     ?LOG(info, _Pid, print_silly_list(D))
             end;
         {info_report, _GL, {_Pid, std_info, D}} ->
-            ?LOG(info, _Pid, "~w", [D]);
+            ?LOG(info, _Pid, "~p", [D]);
         {info_report, _GL, {_P, progress, D}} ->
             Details = lists:sort(D),
             case Details of
