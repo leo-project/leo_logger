@@ -153,10 +153,10 @@ format1(json, #message_log{level    =  Level,
                            message  =  Message}) ->
     Json = {[{log_level, log_level(Level)},
              {node,      node()},
-             {module,    Module},
-             {function,  Function},
+             {module,    list_to_binary(Module)},
+             {function,  list_to_binary(Function)},
              {line,      Line},
-             {message,   Message},
+             {message,   list_to_binary(Message)},
              {unix_time, unixtime()},
              {timestamp, leo_utils:date_format(type_of_now, os:timestamp())}
             ]},
