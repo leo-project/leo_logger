@@ -26,7 +26,6 @@
 -module(leo_logger_appender_file).
 
 -author('Yosuke Hara').
--vsn('0.9.1').
 
 -behaviour(leo_logger_behavior).
 

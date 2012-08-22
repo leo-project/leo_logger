@@ -26,8 +26,6 @@
 %%======================================================================
 -module(leo_logger_error_logger_h).
 
--vsn('0.9.1').
-
 -behaviour(gen_event).
 
 -include("leo_logger.hrl").
