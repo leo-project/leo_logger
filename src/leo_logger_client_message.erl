@@ -135,7 +135,7 @@ format1(text, #message_log{level    = Level,
     case catch io_lib:format("[~s]\t~s\t~s\t~w\t~s:~s\t~s\t~s\r\n",
                              [log_level(Level),
                               atom_to_list(node()),
-                              leo_utils:date_format(type_of_now, now()),
+                              leo_date:date_format(type_of_now, now()),
                               unixtime(),
                               Module, Function, integer_to_list(Line),
                               Message]) of
@@ -157,7 +157,7 @@ format1(json, #message_log{level    =  Level,
              {line,      Line},
              {message,   list_to_binary(Message)},
              {unix_time, unixtime()},
-             {timestamp, leo_utils:date_format(type_of_now, os:timestamp())}
+             {timestamp, leo_date:date_format(type_of_now, os:timestamp())}
             ]},
     case catch jiffy:encode(Json) of
         {'EXIT', _} ->
