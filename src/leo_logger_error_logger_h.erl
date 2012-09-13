@@ -1,8 +1,5 @@
 %%======================================================================
-%%
-%% Leo Logger
-%%
-%% Copyright (c) 2012 Rakuten, Inc.
+%% Copyright (c) 2011 Basho Technologies, Inc.  All Rights Reserved.
 %%
 %% This file is provided to you under the Apache License,
 %% Version 2.0 (the "License"); you may not use this file
@@ -17,12 +14,11 @@
 %% KIND, either express or implied.  See the License for the
 %% specific language governing permissions and limitations
 %% under the License.
-%%
 %% ---------------------------------------------------------------------
 %% Leo Logger - error-logger event handler
+%%
+%% @see Basho Lager - src/error_logger_lager_h.erl
 %% @doc
-%% @see basho/lager/src/error_logger_lager_h.erl
-%% @end
 %%======================================================================
 -module(leo_logger_error_logger_h).
 

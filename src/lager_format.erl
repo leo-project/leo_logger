@@ -500,8 +500,8 @@ chars(C, N) when is_integer(N) ->
     S = chars(C, N bsr 1),
     [C,S|S].
 
-                                                %chars(C, N, Tail) ->
-                                                %    [chars(C, N)|Tail].
+                                                %% chars(C, N, Tail) ->
+                                                %$    [chars(C, N)|Tail].
 
 %% Lowercase conversion
 
