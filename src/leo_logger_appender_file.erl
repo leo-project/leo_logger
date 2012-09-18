@@ -42,9 +42,9 @@
 -spec(init(atom(), list(), list()) ->
              {ok, #logger_state{}}).
 init(Appender, Callback, Props) ->
-    RootPath = proplists:get_value(?FILE_PROP_ROOT_PATH, Props),
-    FileName = proplists:get_value(?FILE_PROP_FILE_NAME, Props),
-    Level    = proplists:get_value(?FILE_PROP_LOG_LEVEL, Props),
+    RootPath = leo_misc:get_value(?FILE_PROP_ROOT_PATH, Props),
+    FileName = leo_misc:get_value(?FILE_PROP_FILE_NAME, Props),
+    Level    = leo_misc:get_value(?FILE_PROP_LOG_LEVEL, Props),
 
     {{Y, M, D}, {H, _, _}} = calendar:now_to_local_time(now()),
     DateHour =  {Y, M, D, H},
@@ -72,7 +72,7 @@ init(Appender, Callback, Props) ->
 -spec(append(list(), #logger_state{}) ->
              ok).
 append(FormattedMsg, State) ->
-    Handle = proplists:get_value(?FILE_PROP_HANDLER, State#logger_state.props),
+    Handle = leo_misc:get_value(?FILE_PROP_HANDLER, State#logger_state.props),
     catch file:write(Handle, lists:flatten(FormattedMsg)),
     ok.
 
@@ -82,9 +82,9 @@ append(FormattedMsg, State) ->
 -spec(rotate(integer(), #logger_state{}) ->
              {ok, #logger_state{}}).
 rotate(Hours, #logger_state{props = Props} = State) ->
-    BaseFileName    = proplists:get_value(?FILE_PROP_FILE_NAME, Props),
-    CurrentFileName = proplists:get_value(?FILE_PROP_CUR_NAME,  Props),
-    Handle          = proplists:get_value(?FILE_PROP_HANDLER,   Props),
+    BaseFileName    = leo_misc:get_value(?FILE_PROP_FILE_NAME, Props),
+    CurrentFileName = leo_misc:get_value(?FILE_PROP_CUR_NAME,  Props),
+    Handle          = leo_misc:get_value(?FILE_PROP_HANDLER,   Props),
 
     ok = close(CurrentFileName, Handle),
     {NewLogFileName, NewHandle} = open(BaseFileName, Hours),

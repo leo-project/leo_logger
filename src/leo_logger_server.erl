@@ -91,7 +91,7 @@ init([Id, Appender, Callback, Props]) ->
 handle_call({stop, Id}, _From, State) ->
     case Id of
         ?LOG_APPENDER_FILE ->
-            case proplists:get_value(?FILE_PROP_HANDLER, State#logger_state.props) of
+            case leo_misc:get_value(?FILE_PROP_HANDLER, State#logger_state.props) of
                 undefined ->
                     void;
                 Handle ->
