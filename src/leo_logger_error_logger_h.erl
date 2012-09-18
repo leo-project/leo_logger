@@ -158,8 +158,8 @@ handle_event(Event, State) ->
                     ?LOG(info, P, "Application ~w started on node ~w",
                          [App, Node]);
                 [{started, Started}, {supervisor, Name}] ->
-                    MFA = format_mfa(proplists:get_value(mfargs, Started)),
-                    Pid = proplists:get_value(pid, Started),
+                    MFA = format_mfa(leo_misc:get_value(mfargs, Started)),
+                    Pid = leo_misc:get_value(pid, Started),
                     ?LOG(debug, P, "Supervisor ~w started ~s at pid ~w",
                          [element(2, Name), MFA, Pid]);
                 _ ->
@@ -183,13 +183,13 @@ code_change(_OldVsn, State, _Extra) ->
 
 
 format_crash_report(Report, Neighbours) ->
-    Name = case proplists:get_value(registered_name, Report, []) of
+    Name = case leo_misc:get_value(registered_name, Report, []) of
                [] ->
                    %% process_info(Pid, registered_name) returns [] for unregistered processes
-                   proplists:get_value(pid, Report);
+                   leo_misc:get_value(pid, Report);
                Atom -> Atom
            end,
-    {Class, Reason, Trace} = proplists:get_value(error_info, Report),
+    {Class, Reason, Trace} = leo_misc:get_value(error_info, Report),
     ReasonStr = format_reason({Reason, Trace}),
     Type = case Class of
                exit -> "exited";
@@ -199,17 +199,17 @@ format_crash_report(Report, Neighbours) ->
                   [Name, length(Neighbours), Type, ReasonStr]).
 
 format_offender(Off) ->
-    case proplists:get_value(mfargs, Off) of
+    case leo_misc:get_value(mfargs, Off) of
         undefined ->
             %% supervisor_bridge
             io_lib:format("at module ~w at ~w",
-                          [proplists:get_value(mod, Off), proplists:get_value(pid, Off)]);
+                          [leo_misc:get_value(mod, Off), leo_misc:get_value(pid, Off)]);
         MFArgs ->
             %% regular supervisor
             MFA = format_mfa(MFArgs),
-            Name = proplists:get_value(name, Off),
+            Name = leo_misc:get_value(name, Off),
             io_lib:format("~p started with ~s at ~w",
-                          [Name, MFA, proplists:get_value(pid, Off)])
+                          [Name, MFA, leo_misc:get_value(pid, Off)])
     end.
 
 
@@ -296,7 +296,7 @@ format_mfa({M, F, A}) when is_list(A) ->
 format_mfa({M, F, A}) when is_integer(A) ->
     io_lib:format("~w:~w/~w", [M, F, A]);
 format_mfa({M, F, A, Props}) when is_list(Props) ->
-    case proplists:get_value(line, Props) of
+    case leo_misc:get_value(line, Props) of
         undefined ->
             format_mfa({M, F, A});
         Line ->
@@ -347,10 +347,10 @@ can_output_custom_format(List) ->
           proplists:is_defined(line, List)     == true andalso
           proplists:is_defined(body, List)     == true) of
         true ->
-            {true, #message_item{module   = proplists:get_value(module,   List),
-                                 function = proplists:get_value(function, List),
-                                 line     = proplists:get_value(line,     List),
-                                 body     = proplists:get_value(body,     List)
+            {true, #message_item{module   = leo_misc:get_value(module,   List),
+                                 function = leo_misc:get_value(function, List),
+                                 line     = leo_misc:get_value(line,     List),
+                                 body     = leo_misc:get_value(body,     List)
                                 }};
         false ->
             {false, List}
