@@ -149,10 +149,11 @@ code_change(_OldVsn, State, _Extra) ->
 append_sub(Id, Log, #logger_state{appender_type = Appender,
                                   callback      = [M,F]} = State) ->
     case catch erlang:apply(M, F, [Appender, Log]) of
-        {'EXIT', Cause} ->
+        {'EXIT', Cause0} ->
+            Cause1 = element(1, Cause0),
             error_logger:error_msg("~p,~p,~p,~p~n",
                                    [{module, ?MODULE_STRING}, {function, "append_sub/3"},
-                                    {line, ?LINE}, {body, Cause}]),
+                                    {line, ?LINE}, {body, Cause1}]),
             State;
         FormattedLog when is_binary(FormattedLog) ->
             NewState = maybe_rotate(Id, State),
