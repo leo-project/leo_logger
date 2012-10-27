@@ -41,10 +41,10 @@
 -define(FILE_PROP_HANDLER,   'file_handler').
 -define(FILE_PROP_LOG_LEVEL, 'log_level').
 
--define(LOG_ID_FILE_INFO,    'log_id_file_info').
--define(LOG_ID_FILE_ERROR,   'log_id_file_error').
--define(LOG_ID_ZMQ,          'log_id_zmq').
--define(LOG_ID_AMQP,         'log_id_amqp').
+-define(LOG_ID_FILE_INFO,    'leo_logger_file_i').
+-define(LOG_ID_FILE_ERROR,   'leo_logger_file_e').
+-define(LOG_ID_ZMQ,          'leo_logger_zmq').
+-define(LOG_ID_AMQP,         'leo_logger_amqp').
 
 
 %%
