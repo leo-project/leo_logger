@@ -46,7 +46,7 @@ start_link(Id, Appender, Callback, Props) ->
     gen_server:start_link({local, Id}, ?MODULE, [Id, Appender, Callback, Props], []).
 
 stop(Id) ->
-    gen_server:call(Id, stop).
+    gen_server:call(Id, stop, 30000).
 
 
 %% @doc Append a message to a log-file.
