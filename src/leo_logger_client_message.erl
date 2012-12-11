@@ -38,6 +38,7 @@
 -define(LOG_FILE_NAME_ERROR, "error").
 -define(LOG_GROUP_INFO,      'log_group_message_info').
 -define(LOG_GROUP_ERROR,     'log_group_message_error').
+-define(MAX_MSG_BODY_LEN,    4096).
 
 %%--------------------------------------------------------------------
 %% API
@@ -112,7 +113,7 @@ format(Appender, Log) ->
     #message_log{format  = Format,
                  message = Message} = Log,
     FormattedMessage =
-        case catch io_lib:format(Format, Message) of
+        case catch lager_format:format(Format, Message, ?MAX_MSG_BODY_LEN) of
             {'EXIT', _} -> [];
             NewMessage  -> NewMessage
         end,
@@ -132,13 +133,14 @@ format1(text, #message_log{level    = Level,
                            function = Function,
                            line     = Line,
                            message  = Message}) ->
-    case catch io_lib:format("[~s]\t~s\t~s\t~w\t~s:~s\t~s\t~s\r\n",
-                             [log_level(Level),
-                              atom_to_list(node()),
-                              leo_date:date_format(type_of_now, now()),
-                              unixtime(),
-                              Module, Function, integer_to_list(Line),
-                              Message]) of
+
+    case catch lager_format:format("[~s]\t~s\t~s\t~w\t~s:~s\t~s\t~s\r\n",
+                                   [log_level(Level),
+                                    atom_to_list(node()),
+                                    leo_date:date_format(type_of_now, now()),
+                                    unixtime(),
+                                    Module, Function, integer_to_list(Line),
+                                    Message], ?MAX_MSG_BODY_LEN) of
         {'EXIT', _Cause} ->
             [];
         Result ->
