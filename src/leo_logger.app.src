@@ -1,3 +1,4 @@
+%% -*- mode: erlang;erlang-indent-level: 4;indent-tabs-mode: nil -*-
 %%======================================================================
 %%
 %% Leo Logger
@@ -20,15 +21,15 @@
 %%
 %%======================================================================
 {application, leo_logger,
-  [
-    {description, "Leo Logger"},
-    {vsn, "0.10.8"},
-    {id, "leo_logger"},
-    {registered,   []},
-    {applications, [kernel, stdlib]},
-    {mod, {leo_logger_app, []}},
-    {env, [{profile,       false},
-           {zmq_bind_port, 10501}
-          ]}
-  ]
+ [
+  {description, "Leo Logger"},
+  {vsn, "0.10.9"},
+  {id, "leo_logger"},
+  {registered,   []},
+  {applications, [kernel, stdlib]},
+  {mod, {leo_logger_app, []}},
+  {env, [{profile,       false},
+         {zmq_bind_port, 10501}
+        ]}
+ ]
 }.
