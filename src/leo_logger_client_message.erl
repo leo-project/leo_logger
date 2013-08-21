@@ -118,11 +118,10 @@ format(Appender, Log) ->
             NewMessage  -> NewMessage
         end,
 
-    Output =
-        case Appender of
-            ?LOG_APPENDER_FILE -> text;
-            _Other             -> json
-        end,
+    Output = case Appender of
+                 ?LOG_APPENDER_FILE -> text;
+                 _Other             -> json
+             end,
     format1(Output, Log#message_log{message = FormattedMessage}).
 
 %% @private
@@ -133,7 +132,6 @@ format1(text, #message_log{level    = Level,
                            function = Function,
                            line     = Line,
                            message  = Message}) ->
-
     case catch lager_format:format("[~s]\t~s\t~s\t~w\t~s:~s\t~s\t~s\r\n",
                                    [log_level(Level),
                                     atom_to_list(node()),

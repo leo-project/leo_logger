@@ -32,7 +32,7 @@
 -include("leo_logger.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
--export([init/3, append/2, rotate/2]).
+-export([init/3, append/2, format/2, rotate/2]).
 
 %%--------------------------------------------------------------------
 %% API
@@ -44,7 +44,6 @@
 init(Appender, Callback, Props) ->
     RootPath = leo_misc:get_value(?FILE_PROP_ROOT_PATH, Props),
     FileName = leo_misc:get_value(?FILE_PROP_FILE_NAME, Props),
-    Level    = leo_misc:get_value(?FILE_PROP_LOG_LEVEL, Props),
 
     {{Y, M, D}, {H, _, _}} = calendar:now_to_local_time(now()),
     DateHour =  {Y, M, D, H},
@@ -62,7 +61,6 @@ init(Appender, Callback, Props) ->
                                            {?FILE_PROP_CUR_NAME,  CurrentFileName},
                                            {?FILE_PROP_HANDLER,   Handle}],
                                callback  = Callback,
-                               level     = Level,
                                hourstamp = DateHour}}
     end.
 
@@ -75,6 +73,20 @@ append(FormattedMsg, State) ->
     Handle = leo_misc:get_value(?FILE_PROP_HANDLER, State#logger_state.props),
     catch file:write(Handle, lists:flatten(FormattedMsg)),
     ok.
+
+
+%% @doc Format a log message
+%%
+-spec(format(atom(), #message_log{}) ->
+             list()).
+format(_Appender, #message_log{format  = Format,
+                               message = Message}) ->
+    case catch io_lib:format(Format, Message) of
+        {'EXIT', _Cause} ->
+            [];
+        Ret ->
+            Ret
+    end.
 
 
 %% @doc
