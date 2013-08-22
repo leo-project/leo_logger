@@ -119,7 +119,7 @@ format(Appender, Log) ->
                  message = Message} = Log,
     FormattedMessage =
         case catch lager_format:format(
-                     Format, Message, ?MAX_MSG_BODY_LEN, [{chomp,true}]) of
+                     Format, Message, ?MAX_MSG_BODY_LEN) of
             {'EXIT', _} ->
                 [];
             NewMessage ->
@@ -146,7 +146,7 @@ format1(text, #message_log{level    = Level,
                                     leo_date:date_format(type_of_now, now()),
                                     unixtime(),
                                     Module, Function, integer_to_list(Line),
-                                    Message], ?MAX_MSG_BODY_LEN, [{chomp,true}]) of
+                                    Message], ?MAX_MSG_BODY_LEN) of
         {'EXIT', _Cause} ->
             [];
         Result ->
