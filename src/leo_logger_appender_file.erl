@@ -61,7 +61,6 @@ init(Appender, Callback, Props) ->
                       true  -> string:substr(BasePath1, 1, BasePathLen-1);
                       false -> BasePath1
                   end,
-    _ = filelib:ensure_dir(BasePath2),
 
     case catch open(BasePath2, DateHour) of
         {'EXIT', Cause} ->
@@ -122,6 +121,7 @@ rotate(Hours, #logger_state{props = Props} = State) ->
 %%--------------------------------------------------------------------
 %% @private
 open(BaseFileName, DateHour) ->
+    _ = filelib:ensure_dir(BaseFileName),
     LogFileName = BaseFileName ++ suffix(DateHour),
     io:format("* opening log file is [~p]~n", [LogFileName]),
 

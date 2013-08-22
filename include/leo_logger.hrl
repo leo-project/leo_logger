@@ -48,19 +48,19 @@
 
 
 %%
--record(logger_state, {appender_type :: atom(),
-                       appender_mod  :: atom(),
-                       callback      :: list(),
-                       props         :: list(),
-                       level = 0     :: integer(),
-                       hourstamp     :: integer()}).
+-record(logger_state, {appender_type  :: atom(),
+                       appender_mod   :: atom(),
+                       callback       :: list(),
+                       props          :: list(),
+                       level = 0      :: integer(),
+                       hourstamp = -1 :: integer()}).
 
--record(message_log,  {level    :: atom(),
-                       module   :: string(),
-                       function :: string(),
-                       line     :: integer(),
-                       format   :: string(),
-                       message  :: list()}).
+-record(message_log,  {level         :: atom(),
+                       module = []   :: string(),
+                       function = [] :: string(),
+                       line = 0      :: integer(),
+                       format  = []  :: string(),
+                       message = []  :: list()}).
 
 -type(log_appender() :: ?LOG_APPENDER_FILE | ?LOG_APPENDER_AMQP | ?LOG_APPENDER_ZMQ).
 
