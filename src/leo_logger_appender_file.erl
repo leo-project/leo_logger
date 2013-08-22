@@ -44,6 +44,7 @@
 init(Appender, Callback, Props) ->
     RootPath = leo_misc:get_value(?FILE_PROP_ROOT_PATH, Props),
     FileName = leo_misc:get_value(?FILE_PROP_FILE_NAME, Props),
+    Level    = leo_misc:get_value(?FILE_PROP_LOG_LEVEL, Props),
 
     {{Y, M, D}, {H, _, _}} = calendar:now_to_local_time(now()),
     DateHour =  {Y, M, D, H},
@@ -72,6 +73,7 @@ init(Appender, Callback, Props) ->
                                            {?FILE_PROP_CUR_NAME,  CurrentFileName},
                                            {?FILE_PROP_HANDLER,   Handle}],
                                callback  = Callback,
+                               level     = Level,
                                hourstamp = DateHour}}
     end.
 
