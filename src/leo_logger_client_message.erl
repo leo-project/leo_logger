@@ -86,23 +86,28 @@ new(RootPath, Level, Loggers) ->
 
 %% @doc Output kind of 'Debug log'
 -spec(debug(any()) -> ok).
-debug(Log) -> leo_logger_api:append(?LOG_GROUP_INFO,  Log, 0).
+debug(Log) ->
+    leo_logger_api:append(?LOG_GROUP_INFO,  Log, 0).
 
 %% @doc Output kind of 'Information log'
 -spec(info(any()) -> ok).
-info(Log)  -> leo_logger_api:append(?LOG_GROUP_INFO,  Log, 1).
+info(Log) ->
+    leo_logger_api:append(?LOG_GROUP_INFO,  Log, 1).
 
 %% @doc Output kind of 'Warning log'
 -spec(warn(any()) -> ok).
-warn(Log)  -> leo_logger_api:append(?LOG_GROUP_ERROR, Log, 2).
+warn(Log) ->
+    leo_logger_api:append(?LOG_GROUP_ERROR, Log, 2).
 
 %% @doc Output kind of 'Error log'
 -spec(error(any()) -> ok).
-error(Log) -> leo_logger_api:append(?LOG_GROUP_ERROR, Log, 3).
+error(Log) ->
+    leo_logger_api:append(?LOG_GROUP_ERROR, Log, 3).
 
 %% @doc Output kind of 'Fatal log'
 -spec(fatal(any()) -> ok).
-fatal(Log) -> leo_logger_api:append(?LOG_GROUP_ERROR, Log, 4).
+fatal(Log) ->
+    leo_logger_api:append(?LOG_GROUP_ERROR, Log, 4).
 
 
 %% @doc Format a log message
@@ -113,9 +118,12 @@ format(Appender, Log) ->
     #message_log{format  = Format,
                  message = Message} = Log,
     FormattedMessage =
-        case catch lager_format:format(Format, Message, ?MAX_MSG_BODY_LEN) of
-            {'EXIT', _} -> [];
-            NewMessage  -> NewMessage
+        case catch lager_format:format(
+                     Format, Message, ?MAX_MSG_BODY_LEN, [{chomp,true}]) of
+            {'EXIT', _} ->
+                [];
+            NewMessage ->
+                NewMessage
         end,
 
     Output = case Appender of
@@ -138,7 +146,7 @@ format1(text, #message_log{level    = Level,
                                     leo_date:date_format(type_of_now, now()),
                                     unixtime(),
                                     Module, Function, integer_to_list(Line),
-                                    Message], ?MAX_MSG_BODY_LEN) of
+                                    Message], ?MAX_MSG_BODY_LEN, [{chomp,true}]) of
         {'EXIT', _Cause} ->
             [];
         Result ->
