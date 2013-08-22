@@ -32,7 +32,7 @@
 -include("leo_logger.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
--export([init/3, append/2, rotate/2]).
+-export([init/3, append/2, format/2, rotate/2]).
 
 %%--------------------------------------------------------------------
 %% API
@@ -49,16 +49,27 @@ init(Appender, Callback, Props) ->
     {{Y, M, D}, {H, _, _}} = calendar:now_to_local_time(now()),
     DateHour =  {Y, M, D, H},
 
-    BaseFileName = filename:join(RootPath, FileName),
-    filelib:ensure_dir(BaseFileName),
+    BasePath = filename:join(RootPath, FileName),
+    {ok, Curr} = file:get_cwd(),
+    BasePath1 = case BasePath of
+                    "/"   ++ _Rest -> BasePath;
+                    "../" ++ _Rest -> BasePath;
+                    "./"  ++  Rest -> Curr ++ "/" ++ Rest;
+                    _              -> Curr ++ "/" ++ BasePath
+            end,
+    BasePathLen = string:len(BasePath1),
+    BasePath2   = case (BasePathLen == string:rstr(BasePath1, "/")) of
+                      true  -> string:substr(BasePath1, 1, BasePathLen-1);
+                      false -> BasePath1
+                  end,
 
-    case catch open(BaseFileName, DateHour) of
+    case catch open(BasePath2, DateHour) of
         {'EXIT', Cause} ->
             {error, Cause};
         {CurrentFileName, Handle} ->
             {ok, #logger_state{appender_type = Appender,
                                appender_mod  = ?appender_mod(Appender),
-                               props    = [{?FILE_PROP_FILE_NAME, BaseFileName},
+                               props    = [{?FILE_PROP_FILE_NAME, BasePath2},
                                            {?FILE_PROP_CUR_NAME,  CurrentFileName},
                                            {?FILE_PROP_HANDLER,   Handle}],
                                callback  = Callback,
@@ -75,6 +86,20 @@ append(FormattedMsg, State) ->
     Handle = leo_misc:get_value(?FILE_PROP_HANDLER, State#logger_state.props),
     catch file:write(Handle, lists:flatten(FormattedMsg)),
     ok.
+
+
+%% @doc Format a log message
+%%
+-spec(format(atom(), #message_log{}) ->
+             list()).
+format(_Appender, #message_log{format  = Format,
+                               message = Message}) ->
+    case catch io_lib:format(Format, Message) of
+        {'EXIT', _Cause} ->
+            [];
+        Ret ->
+            Ret
+    end.
 
 
 %% @doc
@@ -98,6 +123,7 @@ rotate(Hours, #logger_state{props = Props} = State) ->
 %%--------------------------------------------------------------------
 %% @private
 open(BaseFileName, DateHour) ->
+    _ = filelib:ensure_dir(BaseFileName),
     LogFileName = BaseFileName ++ suffix(DateHour),
     io:format("* opening log file is [~p]~n", [LogFileName]),
 
@@ -105,6 +131,14 @@ open(BaseFileName, DateHour) ->
     {ok, Location} = file:position(FD, eof),
     fix_log(FD, Location),
     file:truncate(FD),
+
+    case file:read_link(BaseFileName) of
+        {ok, _} ->
+            ok = file:delete(BaseFileName);
+        _ ->
+            void
+    end,
+    _ = file:make_symlink(LogFileName, BaseFileName),
     {LogFileName, FD}.
 
 

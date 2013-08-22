@@ -25,7 +25,6 @@
 %%======================================================================
 -module(leo_logger_api_tests).
 -author('yosuke hara').
--vsn('0.9.1').
 
 -include("leo_logger.hrl").
 -include_lib("eunit/include/eunit.hrl").
@@ -87,6 +86,15 @@ inspect() ->
     ok = ?error("test_log", "~p", [error]),
     ok = ?fatal("test_log", "~p", [fatal]),
     timer:sleep(1000),
+
+    Error = {badarg,[{erlang,integer_to_list,[aaa],[]},
+                     {erl_eval,do_apply,6,[{file,"erl_eval.erl"},{line,576}]},
+                     {erl_eval,expr,5,[{file,"erl_eval.erl"},{line,360}]},
+                     {erl_eval,expr,5,[{file,"erl_eval.erl"},{line,250}]},
+                     {shell,exprs,7,[{file,"shell.erl"},{line,668}]},
+                     {shell,eval_exprs,7,[{file,"shell.erl"},{line,623}]},
+                     {shell,eval_loop,3,[{file,"shell.erl"},{line,608}]}]},
+    ?error("test_log", "~p", [Error]),
 
     Res0 = os:cmd("ls " ++ ?TEST_LOG_DIR),
     Res1 = string:tokens(Res0, " \n"),
