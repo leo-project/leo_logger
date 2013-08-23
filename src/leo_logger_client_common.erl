@@ -71,7 +71,12 @@ format(Appender, Log) ->
 -spec(append(any()) ->
              ok).
 append({LogId, Log}) ->
-    leo_logger_server:append(LogId, Log, 0).
+    case whereis(LogId) of
+        undefined ->
+            ok;
+        _Pid ->
+            leo_logger_server:append(LogId, Log, 0)
+    end.
 
 -spec(append(list(), #logger_state{}) ->
              ok).
