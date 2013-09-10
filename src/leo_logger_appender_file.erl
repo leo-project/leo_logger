@@ -32,7 +32,7 @@
 -include("leo_logger.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
--export([init/3, append/2, format/2, rotate/2]).
+-export([init/3, append/2, sync/1, format/2, rotate/2]).
 
 %%--------------------------------------------------------------------
 %% API
@@ -66,12 +66,12 @@ init(Appender, Callback, Props) ->
     case catch open(BasePath2, DateHour) of
         {'EXIT', Cause} ->
             {error, Cause};
-        {CurrentFileName, Handle} ->
+        {CurrentFileName, Handler} ->
             {ok, #logger_state{appender_type = Appender,
                                appender_mod  = ?appender_mod(Appender),
                                props    = [{?FILE_PROP_FILE_NAME, BasePath2},
                                            {?FILE_PROP_CUR_NAME,  CurrentFileName},
-                                           {?FILE_PROP_HANDLER,   Handle}],
+                                           {?FILE_PROP_HANDLER,   Handler}],
                                callback  = Callback,
                                level     = Level,
                                hourstamp = DateHour}}
@@ -83,9 +83,18 @@ init(Appender, Callback, Props) ->
 -spec(append(list(), #logger_state{}) ->
              ok).
 append(FormattedMsg, State) ->
-    Handle = leo_misc:get_value(?FILE_PROP_HANDLER, State#logger_state.props),
-    catch file:write(Handle, lists:flatten(FormattedMsg)),
+    Handler = leo_misc:get_value(?FILE_PROP_HANDLER, State#logger_state.props),
+    catch file:write(Handler, lists:flatten(FormattedMsg)),
     ok.
+
+
+%% @doc Sync a file
+%%
+-spec(sync(#logger_state{}) ->
+             ok | {error, any()}).
+sync(State) ->
+    Handler = leo_misc:get_value(?FILE_PROP_HANDLER, State#logger_state.props),
+    file:datasync(Handler).
 
 
 %% @doc Format a log message
@@ -102,35 +111,35 @@ format(_Appender, #message_log{format  = Format,
     end.
 
 
-%% @doc
+%% @doc Rotate a log file
 %%
 -spec(rotate(integer(), #logger_state{}) ->
              {ok, #logger_state{}}).
 rotate(Hours, #logger_state{props = Props} = State) ->
     BaseFileName    = leo_misc:get_value(?FILE_PROP_FILE_NAME, Props),
     CurrentFileName = leo_misc:get_value(?FILE_PROP_CUR_NAME,  Props),
-    Handle          = leo_misc:get_value(?FILE_PROP_HANDLER,   Props),
+    Handler         = leo_misc:get_value(?FILE_PROP_HANDLER,   Props),
 
-    ok = close(CurrentFileName, Handle),
-    {NewLogFileName, NewHandle} = open(BaseFileName, Hours),
+    ok = close(CurrentFileName, Handler),
+    {NewLogFileName, NewHandler} = open(BaseFileName, Hours),
     {ok, State#logger_state{props    = [{?FILE_PROP_FILE_NAME, BaseFileName},
                                         {?FILE_PROP_CUR_NAME,  NewLogFileName},
-                                        {?FILE_PROP_HANDLER,   NewHandle}],
+                                        {?FILE_PROP_HANDLER,   NewHandler}],
                             hourstamp = Hours}}.
 
 %%--------------------------------------------------------------------
 %%% INNER FUNCTIONS
 %%--------------------------------------------------------------------
+%% @doc Open a log file
 %% @private
 open(BaseFileName, DateHour) ->
     _ = filelib:ensure_dir(BaseFileName),
     LogFileName = BaseFileName ++ suffix(DateHour),
     io:format("* opening log file is [~p]~n", [LogFileName]),
 
-    {ok, FD} = file:open(LogFileName, [read, write, raw]),
-    {ok, Location} = file:position(FD, eof),
-    fix_log(FD, Location),
-    file:truncate(FD),
+    {ok, Handler} = file:open(LogFileName, [read, write, raw]),
+    {ok, Location} = file:position(Handler, eof),
+    fix_log(Handler, Location),
 
     case file:read_link(BaseFileName) of
         {ok, _} ->
@@ -139,33 +148,35 @@ open(BaseFileName, DateHour) ->
             void
     end,
     _ = file:make_symlink(LogFileName, BaseFileName),
-    {LogFileName, FD}.
+    {LogFileName, Handler}.
 
 
+%% @doc Close a log file
 %% @private
-close(FileName, FD) ->
+close(FileName, Handler) ->
     io:format("* closing log file: ~p~n", [FileName]),
-    catch file:close(FD),
+    catch file:datasync(Handler),
+    catch file:close(Handler),
     ok.
 
 
 %% @doc Seek backwards to the last valid log entry
 %% @private
-fix_log(_FD, 0) ->
+fix_log(_Handler, 0) ->
     ok;
-fix_log(FD, 1) ->
-    {ok, 0} = file:position(FD, 0),
+fix_log(Handler, 1) ->
+    {ok, 0} = file:position(Handler, 0),
     ok;
-fix_log(FD, Location) ->
-    case file:pread(FD, Location - 1, 1) of
+fix_log(Handler, Location) ->
+    case file:pread(Handler, Location - 1, 1) of
         {ok, [$\n | _]} ->
             ok;
         {ok, _} ->
-            fix_log(FD, Location - 1)
+            fix_log(Handler, Location - 1)
     end.
 
 
-%% @doc
+%% @doc Zero-padding number
 %% @private
 zeropad(Num, MinLength) ->
     NumStr = integer_to_list(Num),
@@ -176,7 +187,7 @@ zeropad_str(NumStr, _) ->
     NumStr.
 
 
-%% @doc
+%% @doc Create a suffix
 %% @private
 suffix({Y, M, D, H}) ->
     YS = zeropad(Y, 4),

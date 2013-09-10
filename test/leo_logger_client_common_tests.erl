@@ -120,7 +120,7 @@ append_(_) ->
                                                                   leo_date:date_format(type_of_now, now()),
                                                                   unixtime()
                                                                  ]}}),
-    inspect(),
+    inspect(LogId),
     ok.
 
 
@@ -128,7 +128,9 @@ append_(_) ->
 %%--------------------------------------------------------------------
 %%% INNER FUNCTIONS
 %%--------------------------------------------------------------------
-inspect() ->
+inspect(LogId) ->
+    leo_logger_client_common:sync(LogId),
+
     Res0 = os:cmd("ls " ++ ?TEST_LOG_DIR),
     Res1 = string:tokens(Res0, " \n"),
     ?assertEqual(true, (Res1 /= [])),

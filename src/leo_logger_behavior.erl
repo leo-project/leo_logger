@@ -37,6 +37,9 @@ behaviour_info(callbacks) ->
      %% append(list(), #logger_state{}) -> ok.
      {append, 2},
 
+     %% sync(#logger_state{}) -> ok.
+     {sync, 1},
+
      %% rotate(integer(), #logger_state{}) -> {ok, #logger_state{}}
      {rotate, 2}
     ];

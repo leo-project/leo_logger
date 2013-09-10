@@ -33,7 +33,7 @@
 -include_lib("eunit/include/eunit.hrl").
 
 -export([start_link/4, stop/1]).
--export([append/2, append/3, rotate/1]).
+-export([append/3, append/4, sync/1, rotate/1]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
 
@@ -51,12 +51,22 @@ stop(Id) ->
 
 %% @doc Append a message to a log-file.
 %%
--spec(append(atom(), any()) ->
+-spec(append(?LOG_APPEND_SYNC|?LOG_APPEND_ASYNC, atom(), any()) ->
              ok).
-append(Id, Log) ->
-    append(Id, Log, 0).
-append(Id, Log, Level) ->
+append(Method, Id, Log) ->
+    append(Method, Id, Log, 0).
+append(?LOG_APPEND_SYNC, Id, Log, Level) ->
+    gen_server:call(Id, {append, {Id, Log, Level}});
+append(?LOG_APPEND_ASYNC, Id, Log, Level) ->
     gen_server:cast(Id, {append, {Id, Log, Level}}).
+
+
+%% @doc Sync a message to a log-file.
+%%
+-spec(sync(atom()) ->
+             ok).
+sync(Id) ->
+    gen_server:call(Id, sync).
 
 
 %% @doc Rotate a log-file.
@@ -100,7 +110,18 @@ handle_call({stop, Id}, _From, State) ->
         _ ->
             void
     end,
-    {stop, normal, ok, State}.
+    {stop, normal, ok, State};
+
+handle_call({append, {Id, Log, Level}}, _From, #logger_state{level = RegisteredLevel} = State) ->
+    NewState = case (Level >= RegisteredLevel) of
+                   true  -> append_sub(Id, Log, State);
+                   false -> State
+               end,
+    {reply, ok, NewState};
+
+handle_call(sync, _From, #logger_state{appender_mod = Mod} = State) ->
+    catch erlang:apply(Mod, sync, [State]),
+    {reply, ok, State}.
 
 
 %% Function: handle_cast(Msg, State) -> {noreply, State}          |

@@ -64,7 +64,7 @@ new(Id, Appender, [_M, _F] = Callback, RootPath, FileName, Level) ->
     io:format("id:~p, path:~p, filename:~p~n", [Id, RootPath, FileName]),
 
     ok = start_app(),
-    NewRootPath = 
+    NewRootPath =
         case (string:len(RootPath) == string:rstr(RootPath, "/")) of
             true  -> RootPath;
             false -> RootPath ++ "/"
@@ -97,7 +97,7 @@ add_appender(GroupId, LoggerId) ->
 -spec(append(atom() | list(), any()) ->
              ok).
 append(GroupId, Log) ->
-    leo_logger_server:append(GroupId, Log, 0).
+    leo_logger_server:append(?LOG_APPEND_ASYNC, GroupId, Log, 0).
 
 -spec(append(atom(), any(), integer()) ->
              ok).
@@ -111,9 +111,10 @@ append(GroupId, Log, Level) ->
         [] ->
             {error, not_found};
         List ->
-            lists:foreach(fun({_, AppenderId}) ->
-                                  leo_logger_server:append(AppenderId, Log, Level)
-                          end, List)
+            lists:foreach(
+              fun({_, AppenderId}) ->
+                      leo_logger_server:append(?LOG_APPEND_ASYNC, AppenderId, Log, Level)
+              end, List)
     end.
 
 %%--------------------------------------------------------------------
