@@ -33,7 +33,6 @@
 -export([new/4, init/3,
          format/2, append/1, append/2, sync/1, rotate/2]).
 
-%% -define(LOG_GROUP, 'log_group_common').
 -define(MAX_MSG_BODY_LEN, 4096).
 
 %%--------------------------------------------------------------------
@@ -44,9 +43,9 @@
 -spec(new(atom(), atom(), string(), string()) ->
              ok).
 new(LogGroup, LogId, RootPath, LogFileName) ->
-    ok = leo_logger_api:new(
+    ok = leo_logger_util:new(
            LogId, ?LOG_APPENDER_FILE, [?MODULE, format], RootPath, LogFileName),
-    ok = leo_logger_api:add_appender(LogGroup, LogId),
+    ok = leo_logger_util:add_appender(LogGroup, LogId),
     ok.
 
 

@@ -66,6 +66,7 @@
 
 -define(LOG_APPEND_SYNC,  'sync').
 -define(LOG_APPEND_ASYNC, 'async').
+-define(ETS_LOGGER_GROUP, 'leo_logger_group').
 
 %% macros.
 %%

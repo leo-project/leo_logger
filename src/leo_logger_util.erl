@@ -23,16 +23,14 @@
 %% @doc
 %% @end
 %%======================================================================
--module(leo_logger_api).
+-module(leo_logger_util).
 
 -author('Yosuke Hara').
 
 -include("leo_logger.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
--export([new/3, new/5, new/6, add_appender/2, append/2, append/3]).
-
--define(ETS_LOGGER_GROUP, 'leo_logger_group').
+-export([new/3, new/5, new/6, add_appender/2]).
 
 %%--------------------------------------------------------------------
 %% API
@@ -91,31 +89,6 @@ add_appender(GroupId, LoggerId) ->
     catch ets:insert(?ETS_LOGGER_GROUP, {GroupId, LoggerId}),
     ok.
 
-
-%% @doc append a log.
-%%
--spec(append(atom() | list(), any()) ->
-             ok).
-append(GroupId, Log) ->
-    leo_logger_server:append(?LOG_APPEND_ASYNC, GroupId, Log, 0).
-
--spec(append(atom(), any(), integer()) ->
-             ok).
-append(GroupId, Log, Level) ->
-    case catch ets:lookup(?ETS_LOGGER_GROUP, GroupId) of
-        {'EXIT', Cause} ->
-            error_logger:error_msg("~p,~p,~p,~p~n",
-                                   [{module, ?MODULE_STRING}, {function, "append/3"},
-                                    {line, ?LINE}, {body, Cause}]),
-            {error, Cause};
-        [] ->
-            {error, not_found};
-        List ->
-            lists:foreach(
-              fun({_, AppenderId}) ->
-                      leo_logger_server:append(?LOG_APPEND_ASYNC, AppenderId, Log, Level)
-              end, List)
-    end.
 
 %%--------------------------------------------------------------------
 %% INNTERNAL FUNCTIONS
