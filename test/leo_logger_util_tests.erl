@@ -23,7 +23,7 @@
 %% @doc
 %% @end
 %%======================================================================
--module(leo_logger_api_tests).
+-module(leo_logger_util_tests).
 -author('yosuke hara').
 
 -include("leo_logger.hrl").
@@ -60,8 +60,8 @@ teardown(_) ->
 %%% TEST FUNCTIONS
 %%--------------------------------------------------------------------
 append_(_) ->
-    ok = leo_logger_api:new(?TEST_LOG_ID, ?LOG_APPENDER_FILE, [?MODULE, format],
-                            ?TEST_LOG_DIR, ?TEST_LOG_FILE),
+    ok = leo_logger_util:new(?TEST_LOG_ID, ?LOG_APPENDER_FILE, [?MODULE, format],
+                             ?TEST_LOG_DIR, ?TEST_LOG_FILE),
 
     Res = os:cmd("ls " ++ ?TEST_LOG_DIR),
     ?assertEqual(true, (Res /= [])),

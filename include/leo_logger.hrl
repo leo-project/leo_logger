@@ -64,6 +64,10 @@
 
 -type(log_appender() :: ?LOG_APPENDER_FILE | ?LOG_APPENDER_AMQP | ?LOG_APPENDER_ZMQ).
 
+-define(LOG_APPEND_SYNC,  'sync').
+-define(LOG_APPEND_ASYNC, 'async').
+-define(ETS_LOGGER_GROUP, 'leo_logger_group').
+
 %% macros.
 %%
 -define(appender_mod(AppenderType),

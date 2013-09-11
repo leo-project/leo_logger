@@ -31,9 +31,8 @@
 -include_lib("eunit/include/eunit.hrl").
 
 -export([new/4, init/3,
-         format/2, append/1, append/2, rotate/2]).
+         format/2, append/1, append/2, sync/1, rotate/2]).
 
-%% -define(LOG_GROUP, 'log_group_common').
 -define(MAX_MSG_BODY_LEN, 4096).
 
 %%--------------------------------------------------------------------
@@ -44,9 +43,9 @@
 -spec(new(atom(), atom(), string(), string()) ->
              ok).
 new(LogGroup, LogId, RootPath, LogFileName) ->
-    ok = leo_logger_api:new(
+    ok = leo_logger_util:new(
            LogId, ?LOG_APPENDER_FILE, [?MODULE, format], RootPath, LogFileName),
-    ok = leo_logger_api:add_appender(LogGroup, LogId),
+    ok = leo_logger_util:add_appender(LogGroup, LogId),
     ok.
 
 
@@ -75,7 +74,7 @@ append({LogId, Log}) ->
         undefined ->
             ok;
         _Pid ->
-            leo_logger_server:append(LogId, Log, 0)
+            leo_logger_server:append(?LOG_APPEND_SYNC, LogId, Log, 0)
     end.
 
 -spec(append(list(), #logger_state{}) ->
@@ -83,6 +82,17 @@ append({LogId, Log}) ->
 append(FormattedMsg, State) ->
     leo_logger_appender_file:append(FormattedMsg, State).
 
+
+%% @doc Sync a log file
+%%
+-spec(sync(atom|#logger_state{}) ->
+             ok | {error, any()}).
+sync(LogId) when is_atom(LogId) ->
+    leo_logger_server:sync(LogId);
+sync(State) when is_record(State, logger_state) ->
+    leo_logger_appender_file:sync(State);
+sync(_L) ->
+    ok.
 
 %% @doc Rotate a log
 %%

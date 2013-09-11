@@ -68,17 +68,17 @@ new(RootPath, Level, Loggers) ->
     lists:foreach(fun({Id, Appender}) ->
                           case Appender of
                               ?LOG_APPENDER_FILE when Id == ?LOG_ID_FILE_INFO ->
-                                  ok = leo_logger_api:new(Id, Appender, [?MODULE, format],
-                                                          RootPath, ?LOG_FILE_NAME_INFO, Level),
-                                  ok = leo_logger_api:add_appender(?LOG_GROUP_INFO, Id);
+                                  ok = leo_logger_util:new(Id, Appender, [?MODULE, format],
+                                                           RootPath, ?LOG_FILE_NAME_INFO, Level),
+                                  ok = leo_logger_util:add_appender(?LOG_GROUP_INFO, Id);
                               ?LOG_APPENDER_FILE when Id == ?LOG_ID_FILE_ERROR ->
-                                  ok = leo_logger_api:new(Id, Appender, [?MODULE, format],
-                                                          RootPath, ?LOG_FILE_NAME_ERROR, Level),
-                                  ok = leo_logger_api:add_appender(?LOG_GROUP_ERROR,Id);
+                                  ok = leo_logger_util:new(Id, Appender, [?MODULE, format],
+                                                           RootPath, ?LOG_FILE_NAME_ERROR, Level),
+                                  ok = leo_logger_util:add_appender(?LOG_GROUP_ERROR,Id);
                               _ ->
-                                  ok = leo_logger_api:new(Id, Appender, [?MODULE, format]),
-                                  ok = leo_logger_api:add_appender(?LOG_GROUP_INFO, Id),
-                                  ok = leo_logger_api:add_appender(?LOG_GROUP_ERROR,Id)
+                                  ok = leo_logger_util:new(Id, Appender, [?MODULE, format]),
+                                  ok = leo_logger_util:add_appender(?LOG_GROUP_INFO, Id),
+                                  ok = leo_logger_util:add_appender(?LOG_GROUP_ERROR,Id)
                           end
                   end, Loggers),
     ok.
@@ -87,27 +87,27 @@ new(RootPath, Level, Loggers) ->
 %% @doc Output kind of 'Debug log'
 -spec(debug(any()) -> ok).
 debug(Log) ->
-    leo_logger_api:append(?LOG_GROUP_INFO,  Log, 0).
+    append(?LOG_GROUP_INFO, Log, 0).
 
 %% @doc Output kind of 'Information log'
 -spec(info(any()) -> ok).
 info(Log) ->
-    leo_logger_api:append(?LOG_GROUP_INFO,  Log, 1).
+    append(?LOG_GROUP_INFO, Log, 1).
 
 %% @doc Output kind of 'Warning log'
 -spec(warn(any()) -> ok).
 warn(Log) ->
-    leo_logger_api:append(?LOG_GROUP_ERROR, Log, 2).
+    append(?LOG_GROUP_ERROR, Log, 2).
 
 %% @doc Output kind of 'Error log'
 -spec(error(any()) -> ok).
 error(Log) ->
-    leo_logger_api:append(?LOG_GROUP_ERROR, Log, 3).
+    append(?LOG_GROUP_ERROR, Log, 3).
 
 %% @doc Output kind of 'Fatal log'
 -spec(fatal(any()) -> ok).
 fatal(Log) ->
-    leo_logger_api:append(?LOG_GROUP_ERROR, Log, 4).
+    append(?LOG_GROUP_ERROR, Log, 4).
 
 
 %% @doc Format a log message
@@ -175,10 +175,30 @@ format1(json, #message_log{level    =  Level,
     end.
 
 
-
 %%--------------------------------------------------------------------
 %% INNER FUNCTIONS
 %%--------------------------------------------------------------------
+%% @doc append a log.
+%% @private
+-spec(append(atom(), any(), integer()) ->
+             ok).
+append(GroupId, Log, Level) ->
+    case catch ets:lookup(?ETS_LOGGER_GROUP, GroupId) of
+        {'EXIT', Cause} ->
+            error_logger:error_msg("~p,~p,~p,~p~n",
+                                   [{module, ?MODULE_STRING}, {function, "append/3"},
+                                    {line, ?LINE}, {body, Cause}]),
+            {error, Cause};
+        [] ->
+            {error, not_found};
+        List ->
+            lists:foreach(
+              fun({_, AppenderId}) ->
+                      leo_logger_server:append(?LOG_APPEND_ASYNC, AppenderId, Log, Level)
+              end, List)
+    end.
+
+
 %% @doc Set log-level
 %% @private
 log_level(?LOG_LEVEL_DEBUG) -> "D";
