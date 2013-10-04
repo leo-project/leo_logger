@@ -143,7 +143,7 @@ format1(text, #message_log{level    = Level,
     case catch lager_format:format("[~s]\t~s\t~s\t~w\t~s:~s\t~s\t~s\r\n",
                                    [log_level(Level),
                                     atom_to_list(node()),
-                                    leo_date:date_format(type_of_now, now()),
+                                    leo_date:date_format(),
                                     unixtime(),
                                     Module, Function, integer_to_list(Line),
                                     Message], ?MAX_MSG_BODY_LEN) of
@@ -165,7 +165,7 @@ format1(json, #message_log{level    =  Level,
              {line,      Line},
              {message,   list_to_binary(Message)},
              {unix_time, unixtime()},
-             {timestamp, leo_date:date_format(type_of_now, os:timestamp())}
+             {timestamp, leo_date:date_format()}
             ]},
     case catch jiffy:encode(Json) of
         {'EXIT', _} ->
