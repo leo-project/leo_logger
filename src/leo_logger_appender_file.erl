@@ -82,7 +82,7 @@ init(Appender, Callback, Props) ->
 %%
 -spec(append(list(), #logger_state{}) ->
              ok).
-append(FormattedMsg, State) ->
+append(#message_log{formatted_msg = FormattedMsg}, State) ->
     Handler = leo_misc:get_value(?FILE_PROP_HANDLER, State#logger_state.props),
     catch file:write(Handler, lists:flatten(FormattedMsg)),
     ok.

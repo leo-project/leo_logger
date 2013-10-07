@@ -178,10 +178,12 @@ append_sub(Id, Log, #logger_state{appender_type = Appender,
             State;
         FormattedLog when is_binary(FormattedLog) ->
             NewState = maybe_rotate(Id, State),
-            append_sub1(?appender_mod(Appender), FormattedLog, NewState);
+            append_sub1(?appender_mod(Appender),
+                        Log#message_log{formatted_msg = FormattedLog}, NewState);
         FormattedLog when is_list(FormattedLog) ->
             NewState = maybe_rotate(Id, State),
-            append_sub1(?appender_mod(Appender), lists:flatten(FormattedLog), NewState);
+            append_sub1(?appender_mod(Appender),
+                        Log#message_log{formatted_msg = lists:flatten(FormattedLog)}, NewState);
         _ ->
             error_logger:error_msg("~p,~p,~p,~p~n",
                                    [{module, ?MODULE_STRING}, {function, "append_sub/3"},
@@ -195,8 +197,8 @@ append_sub(Id, Log, #logger_state{appender_type = Appender,
              #logger_state{}).
 append_sub1(undefined, _, State) ->
     State;
-append_sub1(Mod, FormattedMsg, State) ->
-    catch erlang:apply(Mod, append, [FormattedMsg, State]),
+append_sub1(Mod, LogMsg, State) ->
+    catch erlang:apply(Mod, append, [LogMsg, State]),
     State.
 
 
