@@ -31,20 +31,28 @@
 -define(LOG_LEVEL_FATAL, 4).
 
 %% log-appender (for message-log)
--define(LOG_APPENDER_FILE,   'file').
--define(LOG_APPENDER_AMQP,   'amqp').
--define(LOG_APPENDER_ZMQ,    'zmq').
+-define(LOG_APPENDER_FILE,    'file').
+-define(LOG_APPENDER_ESEARCH, 'elastic_search').
 
--define(FILE_PROP_ROOT_PATH, 'root_path').
--define(FILE_PROP_FILE_NAME, 'org_filename').
--define(FILE_PROP_CUR_NAME,  'cur_filename').
--define(FILE_PROP_HANDLER,   'file_handler').
--define(FILE_PROP_LOG_LEVEL, 'log_level').
+-define(FILE_PROP_ROOT_PATH,  'root_path').
+-define(FILE_PROP_FILE_NAME,  'org_filename').
+-define(FILE_PROP_CUR_NAME,   'cur_filename').
+-define(FILE_PROP_HANDLER,    'file_handler').
+-define(FILE_PROP_LOG_LEVEL,  'log_level').
+
+-define(ESEARCH_PROP_HOST,    'esearch_host').
+-define(ESEARCH_PROP_PORT,    'esearch_port').
+-define(ESEARCH_PROP_TIMEOUT, 'esearch_timeout').
+-define(ESEARCH_DOC_INDEX,    'esearch_doc_index').
+-define(ESEARCH_DOC_TYPE,     'esearch_doc_type').
 
 -define(LOG_ID_FILE_INFO,  'leo_logger_file_i').
 -define(LOG_ID_FILE_ERROR, 'leo_logger_file_e').
--define(LOG_ID_ZMQ,        'leo_logger_zmq').
--define(LOG_ID_AMQP,       'leo_logger_amqp').
+-define(LOG_ID_ESEARCH,    'leo_logger_esearch').
+
+-define(DEF_ESEARCH_HOST,     "127.0.0.1").
+-define(DEF_ESEARCH_PORT,     9200).
+-define(DEF_ESEARCH_TIMEOUT,  5000).
 
 
 %%
@@ -53,16 +61,22 @@
                        callback       :: list(),
                        props          :: list(),
                        level = 0      :: integer(),
-                       hourstamp = -1 :: integer()}).
+                       hourstamp = -1 :: integer(),
+                       esearch = []   :: list(tuple())
+                      }).
 
 -record(message_log,  {level         :: atom(),
                        module = []   :: string(),
                        function = [] :: string(),
                        line = 0      :: integer(),
                        format  = []  :: string(),
-                       message = []  :: list()}).
+                       message = []  :: list(),
+                       formatted_msg = [] :: list(),
+                       esearch = []  :: list(tuple())
+                      }).
 
--type(log_appender() :: ?LOG_APPENDER_FILE | ?LOG_APPENDER_AMQP | ?LOG_APPENDER_ZMQ).
+
+-type(log_appender() :: ?LOG_APPENDER_FILE | ?LOG_APPENDER_ESEARCH).
 
 -define(LOG_APPEND_SYNC,  'sync').
 -define(LOG_APPEND_ASYNC, 'async').
@@ -72,9 +86,8 @@
 %%
 -define(appender_mod(AppenderType),
         case AppenderType of
-            ?LOG_APPENDER_FILE -> leo_logger_appender_file;
-            ?LOG_APPENDER_AMQP -> leo_logger_appender_amqp;
-            ?LOG_APPENDER_ZMQ  -> leo_logger_appender_zmq;
+            ?LOG_APPENDER_FILE    -> leo_logger_appender_file;
+            ?LOG_APPENDER_ESEARCH -> leo_logger_appender_esearch;
             _ ->
                 undefined
         end).

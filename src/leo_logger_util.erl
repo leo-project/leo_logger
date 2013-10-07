@@ -30,7 +30,7 @@
 -include("leo_logger.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
--export([new/3, new/5, new/6, add_appender/2]).
+-export([new/3, new/4, new/5, new/6, add_appender/2]).
 
 %%--------------------------------------------------------------------
 %% API
@@ -40,9 +40,12 @@
 -spec(new(atom(), log_appender(), list()) ->
              ok | {error, any()}).
 new(Id, Appender, Callback) ->
+    new(Id, Appender, Callback, []).
+
+new(Id, Appender, Callback, Props) ->
     ok = start_app(),
 
-    case supervisor:start_child(leo_logger_sup, [Id, Appender, Callback, []]) of
+    case supervisor:start_child(leo_logger_sup, [Id, Appender, Callback, Props]) of
         {ok, _Pid} ->
             ok;
         {error, {already_started, _Pid}} ->
@@ -50,6 +53,7 @@ new(Id, Appender, Callback) ->
         Error ->
             Error
     end.
+
 
 -spec(new(atom(), log_appender(), list(), string(), string()) ->
              ok | {error, any()}).
