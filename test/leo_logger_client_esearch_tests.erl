@@ -59,22 +59,24 @@ append_(_) ->
     ok = leo_logger_client_esearch:new('log_group_access', LogId, "127.0.0.1", 9200, 5000),
     Timestamp = list_to_binary(leo_date:date_format('utc', calendar:datetime_to_gregorian_seconds(
                                                              calendar:now_to_universal_time(os:timestamp())))),
+
     Msg1 = [{<<"@timestamp">>, Timestamp},
             {<<"@bucket">>,    <<"bucket_1">>},
-            {<<"@message">>, <<"211.170.104.56 - - [03/Oct/2013:08:54:55 +0000] \"GET /EHHK.html HTTP/1.1\" 503 0 \"-\" \"Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1; .NET CLR 1.1.4322)\"">>},
-            {<<"extension">>, <<"html">>},
-            {<<"clientip">>, <<"211.170.104.56">>},
-            {<<"request">>, <<"/bucket1/ADC.html">>},
-            {<<"response">>, <<"200">>},
-            {<<"bytes">>, <<"512">>}],
+            {<<"@gateway">>,   <<"gateway_0@127.0.0.1">>},
+            {<<"@method">>,    <<"GET">>},
+            {<<"mime">>,       <<"text/html">>},
+            {<<"request">>,    <<"bucket1/ABS.html">>},
+            {<<"response">>,   <<"200">>},
+            {<<"bytes">>,      <<"512">>}],
+
     Msg2 = [{<<"@timestamp">>, Timestamp},
             {<<"@bucket">>,    <<"bucket_1">>},
-            {<<"@message">>, <<"211.170.104.56 - - [03/Oct/2013:08:54:55 +0000] \"PUT /EHHK.html HTTP/1.1\" 503 0 \"-\" \"Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1; .NET CLR 1.1.4322)\"">>},
-            {<<"extension">>, <<"html">>},
-            {<<"clientip">>, <<"211.170.104.56">>},
-            {<<"request">>, <<"/bucket1/ABC.html">>},
-            {<<"response">>, <<"200">>},
-            {<<"bytes">>, <<"1024">>}],
+            {<<"@gateway">>,   <<"gateway_1@127.0.0.1">>},
+            {<<"@method">>,    <<"PUT">>},
+            {<<"mime">>,       <<"text/html">>},
+            {<<"request">>,    <<"bucket1/ADC.html">>},
+            {<<"response">>,   <<"200">>},
+            {<<"bytes">>,      <<"768">>}],
 
     ok = leo_logger_client_esearch:append({LogId, #message_log{message = Msg1,
                                                                esearch = [{?ESEARCH_DOC_INDEX, <<"2013-10-03">>},
@@ -84,7 +86,6 @@ append_(_) ->
                                                                esearch = [{?ESEARCH_DOC_INDEX, <<"2013-10-03">>},
                                                                           {?ESEARCH_DOC_TYPE,  <<"bucket_1">>}]
                                                               }}),
-
     inspect(),
     ok.
 
@@ -94,9 +95,11 @@ append_(_) ->
 %%% INNER FUNCTIONS
 %%--------------------------------------------------------------------
 inspect() ->
-    Ret = erlastic_search:search(<<"2013-10-03">>, <<"bucket_1">>, <<"extension:html">>),
-    ?debugVal(Ret),
-    ?assertMatch({ok, _Ret}, Ret),
+    Ret1 = erlastic_search:search(<<"2013-10-03">>, <<"bucket_1">>, <<"gateway:gateway_1@127.0.0.1">>),
+    Ret2 = erlastic_search:search(<<"2013-10-03">>, <<"bucket_1">>, <<"mime:html">>),
+    ?debugVal({Ret1, Ret2}),
+    ?assertMatch({ok, _}, Ret1),
+    ?assertMatch({ok, _}, Ret2),
     ok.
 
 -endif.
