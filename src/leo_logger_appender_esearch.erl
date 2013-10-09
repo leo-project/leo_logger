@@ -33,7 +33,7 @@
 -include_lib("erlastic_search/include/erlastic_search.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
--export([init/3, append/2, sync/1, format/2, rotate/2]).
+-export([init/3, append/2, bulk_output/2, sync/1, format/2, rotate/2]).
 
 %%--------------------------------------------------------------------
 %% API
@@ -45,17 +45,20 @@
 init(Appender, Callback, Props) ->
     {ok, #logger_state{appender_type = Appender,
                        appender_mod  = ?appender_mod(Appender),
-                       props     = Props,
-                       callback  = Callback,
-                       level     = 0}}.
+                       props         = Props,
+                       callback      = Callback,
+                       level         = 0,
+                       buf_interval  = 3000,
+                       buf_begining  = 0
+                      }}.
 
 
 %% @doc Append a message to a file
 %%
 -spec(append(list(), #logger_state{}) ->
-             ok).
+             #logger_state{}).
 append(#message_log{formatted_msg = FormattedMsg,
-                    esearch = ESearch}, #logger_state{props = Props} = _State) ->
+                    esearch = ESearch}, #logger_state{props = Props} = State) ->
     {Host, Port, Timeout} = get_env(Props),
     Index   = leo_misc:get_value(?ESEARCH_DOC_INDEX,    ESearch),
     Type    = leo_misc:get_value(?ESEARCH_DOC_TYPE,     ESearch),
@@ -65,7 +68,15 @@ append(#message_log{formatted_msg = FormattedMsg,
                                                  timeout  = Timeout,
                                                  ctimeout = Timeout},
                                     Index, Type, FormattedMsg),
-    ok.
+    State.
+
+
+-spec(bulk_output(list(any()), #logger_state{}) ->
+             #logger_state{}).
+bulk_output(_Logs, State) ->
+    %% @TODO
+    ?debugVal(_Logs),
+    State#logger_state{buffer = []}.
 
 
 %% @doc Sync a file

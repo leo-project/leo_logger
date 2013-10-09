@@ -41,7 +41,7 @@
 -spec(new(atom(), atom(), string(), pos_integer(), pos_integer()) ->
              ok).
 new(LogGroup, LogId, Host, Port, Timeout) ->
-    ok = leo_logger_util:new(LogId, ?LOG_APPENDER_ESEARCH, [?MODULE, format],
+    ok = leo_logger_util:new(LogId, ?LOG_APPENDER_ESEARCH, ?MODULE,
                              [{?ESEARCH_PROP_HOST,    Host},
                               {?ESEARCH_PROP_PORT,    Port},
                               {?ESEARCH_PROP_TIMEOUT, Timeout}]),

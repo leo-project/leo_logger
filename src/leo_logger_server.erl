@@ -88,7 +88,7 @@ rotate(Id) ->
 init([Id, Appender, Callback, Props]) ->
     Mod = ?appender_mod(Appender),
 
-    case  catch erlang:apply(Mod, init, [Appender, Callback, Props]) of
+    case catch erlang:apply(Mod, init, [Appender, Callback, Props]) of
         {ok, State} ->
             defer_rotate(Id),
             {ok, State};
@@ -112,11 +112,47 @@ handle_call({stop, Id}, _From, State) ->
     end,
     {stop, normal, ok, State};
 
-handle_call({append, {Id, Log, Level}}, _From, #logger_state{level = RegisteredLevel} = State) ->
+handle_call({append, {Id, Log, Level}}, _From, #logger_state{level = RegisteredLevel,
+                                                             buf_interval = 0} = State) ->
     NewState = case (Level >= RegisteredLevel) of
                    true  -> append_sub(Id, Log, State);
                    false -> State
                end,
+    {reply, ok, NewState};
+
+handle_call({append, {Id, Log, Level}}, _From, #logger_state{appender_type = Appender,
+                                                             callback      = M,
+                                                             level  = RegisteredLevel,
+                                                             buffer = Buf,
+                                                             buf_interval = BufInterval,
+                                                             buf_begining = BufBegining
+                                                            } = State) ->
+    Now = leo_math:floor(leo_date:clock() / 1000),
+    NewState = case ((Now - BufBegining) =< BufInterval) of
+                   true ->
+                       ?debugVal({Now, BufBegining, Now-BufBegining}),
+                       case (Level >= RegisteredLevel) of
+                           true ->
+                               %% @TODO
+                               {ok, FormattedLog} = format_log(M, Appender, Log),
+                               ?debugVal(Log),
+                               bulk_output([Log#message_log{formatted_msg = FormattedLog}|Buf], State);
+                           false ->
+                               State
+                       end;
+                   false ->
+                       timer:apply_after(BufInterval, gen_server, call, [Id, bulk_output]),
+                       {ok, FormattedLog} = format_log(M, Appender, Log),
+                       ?debugVal(FormattedLog),
+                       State#logger_state{
+                         buffer = [Log#message_log{formatted_msg = FormattedLog}|Buf]}
+               end,
+    {reply, ok, NewState#logger_state{buf_begining = Now}};
+
+handle_call(bulk_output, _From, #logger_state{appender_mod  = Mod,
+                                              buffer = Buf} = State) ->
+    ?debugVal({Mod, Buf}),
+    NewState = bulk_output(Buf, State),
     {reply, ok, NewState};
 
 handle_call(sync, _From, #logger_state{appender_mod = Mod} = State) ->
@@ -167,39 +203,62 @@ code_change(_OldVsn, State, _Extra) ->
 %%--------------------------------------------------------------------
 %% @doc
 %% @private
-append_sub(Id, Log, #logger_state{appender_type = Appender,
-                                  callback      = [M,F]} = State) ->
-    case catch erlang:apply(M, F, [Appender, Log]) of
+format_log(M, Appender, Log) ->
+    case catch erlang:apply(M, format, [Appender, Log]) of
         {'EXIT', Cause0} ->
             Cause1 = element(1, Cause0),
             error_logger:error_msg("~p,~p,~p,~p~n",
                                    [{module, ?MODULE_STRING}, {function, "append_sub/3"},
                                     {line, ?LINE}, {body, Cause1}]),
-            State;
+            {error, Cause1};
         FormattedLog when is_binary(FormattedLog) ->
-            NewState = maybe_rotate(Id, State),
-            append_sub1(?appender_mod(Appender),
-                        Log#message_log{formatted_msg = FormattedLog}, NewState);
+            {ok, FormattedLog};
         FormattedLog when is_list(FormattedLog) ->
-            NewState = maybe_rotate(Id, State),
-            append_sub1(?appender_mod(Appender),
-                        Log#message_log{formatted_msg = lists:flatten(FormattedLog)}, NewState);
+            {ok, FormattedLog};
         _ ->
             error_logger:error_msg("~p,~p,~p,~p~n",
                                    [{module, ?MODULE_STRING}, {function, "append_sub/3"},
                                     {line, ?LINE}, {body, "Invalid formatted log message"}]),
+            {error, invalid_format}
+    end.
+
+%% @doc
+%% @private
+append_sub(Id, Log, #logger_state{appender_mod  = Mod,
+                                  appender_type = Appender,
+                                  callback      = M} = State) ->
+    case format_log(M, Appender, Log) of
+        {ok, FormattedLog} when is_binary(FormattedLog) ->
+            NewState = maybe_rotate(Id, State),
+            append_sub_1(Mod,
+                         Log#message_log{formatted_msg = FormattedLog}, NewState);
+        {ok, FormattedLog} when is_list(FormattedLog) ->
+            NewState = maybe_rotate(Id, State),
+            append_sub_1(Mod,
+                         Log#message_log{formatted_msg = lists:flatten(FormattedLog)}, NewState);
+        {error,_Cause} ->
             State
     end.
 
+
 %% @doc Append a message to LOG.
 %% @private
--spec(append_sub(atom(), string(), #logger_state{}) ->
+-spec(append_sub_1(atom(), string()|binary(), #logger_state{}) ->
              #logger_state{}).
-append_sub1(undefined, _, State) ->
+append_sub_1(undefined, _, State) ->
     State;
-append_sub1(Mod, LogMsg, State) ->
-    catch erlang:apply(Mod, append, [LogMsg, State]),
-    State.
+append_sub_1(Mod, LogMsg, State) ->
+    erlang:apply(Mod, append, [LogMsg, State]).
+
+
+%% @doc Output logs
+%% @private
+-spec(bulk_output(list(any()), #logger_state{}) ->
+             ok | {error, any()}).
+bulk_output(Logs, #logger_state{appender_mod = Mod} = State) ->
+    %% @TODO
+    ?debugVal({Mod, Logs, State}),
+    erlang:apply(Mod, bulk_output, [Logs, State]).
 
 
 %% @doc Defer for a rotating log

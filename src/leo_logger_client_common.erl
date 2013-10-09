@@ -44,7 +44,7 @@
              ok).
 new(LogGroup, LogId, RootPath, LogFileName) ->
     ok = leo_logger_util:new(
-           LogId, ?LOG_APPENDER_FILE, [?MODULE, format], RootPath, LogFileName),
+           LogId, ?LOG_APPENDER_FILE, ?MODULE, RootPath, LogFileName),
     ok = leo_logger_util:add_appender(LogGroup, LogId),
     ok.
 

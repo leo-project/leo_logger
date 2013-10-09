@@ -56,23 +56,26 @@
 
 
 %%
--record(logger_state, {appender_type  :: atom(),
-                       appender_mod   :: atom(),
-                       callback       :: list(),
-                       props          :: list(),
-                       level = 0      :: integer(),
-                       hourstamp = -1 :: integer(),
-                       esearch = []   :: list(tuple())
+-record(logger_state, {appender_type    :: atom(),
+                       appender_mod     :: atom(),
+                       callback         :: list(),
+                       props            :: list(),
+                       level = 0        :: pos_integer(),
+                       hourstamp = -1   :: integer(),
+
+                       buffer = []      :: list(any()),
+                       buf_interval = 0 :: pos_integer(),
+                       buf_begining = 0 :: pos_integer()
                       }).
 
--record(message_log,  {level         :: atom(),
-                       module = []   :: string(),
-                       function = [] :: string(),
-                       line = 0      :: integer(),
-                       format  = []  :: string(),
-                       message = []  :: list(),
+-record(message_log,  {level              :: atom(),
+                       module = []        :: string(),
+                       function = []      :: string(),
+                       line = 0           :: pos_integer(),
+                       format  = []       :: string(),
+                       message = []       :: list(),
                        formatted_msg = [] :: list(),
-                       esearch = []  :: list(tuple())
+                       esearch = []       :: list(tuple())
                       }).
 
 

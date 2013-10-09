@@ -68,15 +68,15 @@ new(RootPath, Level, Loggers) ->
     lists:foreach(fun({Id, Appender}) ->
                           case Appender of
                               ?LOG_APPENDER_FILE when Id == ?LOG_ID_FILE_INFO ->
-                                  ok = leo_logger_util:new(Id, Appender, [?MODULE, format],
+                                  ok = leo_logger_util:new(Id, Appender, ?MODULE,
                                                            RootPath, ?LOG_FILE_NAME_INFO, Level),
                                   ok = leo_logger_util:add_appender(?LOG_GROUP_INFO, Id);
                               ?LOG_APPENDER_FILE when Id == ?LOG_ID_FILE_ERROR ->
-                                  ok = leo_logger_util:new(Id, Appender, [?MODULE, format],
+                                  ok = leo_logger_util:new(Id, Appender, ?MODULE,
                                                            RootPath, ?LOG_FILE_NAME_ERROR, Level),
                                   ok = leo_logger_util:add_appender(?LOG_GROUP_ERROR,Id);
                               _ ->
-                                  ok = leo_logger_util:new(Id, Appender, [?MODULE, format]),
+                                  ok = leo_logger_util:new(Id, Appender, ?MODULE),
                                   ok = leo_logger_util:add_appender(?LOG_GROUP_INFO, Id),
                                   ok = leo_logger_util:add_appender(?LOG_GROUP_ERROR,Id)
                           end
@@ -194,7 +194,7 @@ append(GroupId, Log, Level) ->
         List ->
             lists:foreach(
               fun({_, AppenderId}) ->
-                      leo_logger_server:append(?LOG_APPEND_ASYNC, AppenderId, Log, Level)
+                      leo_logger_server:append(?LOG_APPEND_SYNC, AppenderId, Log, Level)
               end, List)
     end.
 

@@ -32,7 +32,7 @@
 -include("leo_logger.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
--export([init/3, append/2, sync/1, format/2, rotate/2]).
+-export([init/3, append/2, bulk_output/2, sync/1, format/2, rotate/2]).
 
 %%--------------------------------------------------------------------
 %% API
@@ -81,11 +81,19 @@ init(Appender, Callback, Props) ->
 %% @doc Append a message to a file
 %%
 -spec(append(list(), #logger_state{}) ->
-             ok).
+             #logger_state{}).
 append(#message_log{formatted_msg = FormattedMsg}, State) ->
     Handler = leo_misc:get_value(?FILE_PROP_HANDLER, State#logger_state.props),
     catch file:write(Handler, lists:flatten(FormattedMsg)),
-    ok.
+    State.
+
+
+%% @doc Output messages
+%%
+-spec(bulk_output(list(), #logger_state{}) ->
+             #logger_state{}).
+bulk_output(_Logs, State) ->
+    State.
 
 
 %% @doc Sync a file
