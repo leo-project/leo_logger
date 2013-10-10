@@ -33,7 +33,7 @@
 -include_lib("eunit/include/eunit.hrl").
 
 -export([start_link/4, stop/1]).
--export([append/3, append/4, sync/1, rotate/1]).
+-export([append/3, append/4, bulk_output/1, sync/1, rotate/1]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
 
@@ -42,8 +42,8 @@
 %%--------------------------------------------------------------------
 %% Function: start_link() -> {ok,Pid} | ignore | {error,Error}
 %% Description: Starts the server
-start_link(Id, Appender, Callback, Props) ->
-    gen_server:start_link({local, Id}, ?MODULE, [Id, Appender, Callback, Props], []).
+start_link(Id, Appender, CallbackMod, Props) ->
+    gen_server:start_link({local, Id}, ?MODULE, [Id, Appender, CallbackMod, Props], []).
 
 stop(Id) ->
     gen_server:call(Id, stop, 30000).
@@ -59,6 +59,14 @@ append(?LOG_APPEND_SYNC, Id, Log, Level) ->
     gen_server:call(Id, {append, {Id, Log, Level}});
 append(?LOG_APPEND_ASYNC, Id, Log, Level) ->
     gen_server:cast(Id, {append, {Id, Log, Level}}).
+
+
+%% @doc output bulked message to a log-file.
+%%
+-spec(bulk_output(atom()) ->
+             ok).
+bulk_output(Id) ->
+    gen_server:call(Id, bulk_output).
 
 
 %% @doc Sync a message to a log-file.
@@ -85,13 +93,14 @@ rotate(Id) ->
 %%                         ignore               |
 %%                         {stop, Reason}
 %% Description: Initiates the server
-init([Id, Appender, Callback, Props]) ->
+init([Id, Appender, CallbackMod, Props]) ->
     Mod = ?appender_mod(Appender),
 
-    case catch erlang:apply(Mod, init, [Appender, Callback, Props]) of
+    case catch erlang:apply(Mod, init, [Appender, CallbackMod, Props]) of
         {ok, State} ->
             defer_rotate(Id),
-            {ok, State};
+            {ok, State#logger_state{
+                   buf_begining = leo_math:floor(leo_date:clock() / 1000)}};
         {'EXIT', Cause} ->
             {stop, Cause};
         {error, Cause} ->
@@ -120,40 +129,41 @@ handle_call({append, {Id, Log, Level}}, _From, #logger_state{level = RegisteredL
                end,
     {reply, ok, NewState};
 
-handle_call({append, {Id, Log, Level}}, _From, #logger_state{appender_type = Appender,
-                                                             callback      = M,
+handle_call({append, {Id, Log, Level}}, _From, #logger_state{callback_mod = M,
                                                              level  = RegisteredLevel,
                                                              buffer = Buf,
-                                                             buf_interval = BufInterval,
-                                                             buf_begining = BufBegining
+                                                             buf_interval  = BufInterval,
+                                                             buf_begining  = BufBegining,
+                                                             is_buf_output = IsBufOutput
                                                             } = State) ->
     Now = leo_math:floor(leo_date:clock() / 1000),
-    NewState = case ((Now - BufBegining) =< BufInterval) of
-                   true ->
-                       ?debugVal({Now, BufBegining, Now-BufBegining}),
-                       case (Level >= RegisteredLevel) of
-                           true ->
-                               %% @TODO
-                               {ok, FormattedLog} = format_log(M, Appender, Log),
-                               ?debugVal(Log),
-                               bulk_output([Log#message_log{formatted_msg = FormattedLog}|Buf], State);
-                           false ->
-                               State
-                       end;
-                   false ->
-                       timer:apply_after(BufInterval, gen_server, call, [Id, bulk_output]),
-                       {ok, FormattedLog} = format_log(M, Appender, Log),
-                       ?debugVal(FormattedLog),
-                       State#logger_state{
-                         buffer = [Log#message_log{formatted_msg = FormattedLog}|Buf]}
-               end,
-    {reply, ok, NewState#logger_state{buf_begining = Now}};
+    State_2 = case ((Now - BufBegining) > BufInterval) of
+                  true ->
+                      case (Level >= RegisteredLevel) of
+                          true ->
+                              {ok, FormattedLog} = format_log(M, bulk, Log),
+                              bulk_output_sub([Log#message_log{formatted_msg = FormattedLog}|Buf], State);
+                          false ->
+                              State
+                      end;
+                  false ->
+                      State_1 = case IsBufOutput of
+                                    true ->
+                                        State;
+                                    false ->
+                                        timer:apply_after(BufInterval, ?MODULE, bulk_output, [Id]),
+                                        State#logger_state{is_buf_output = true}
+                                end,
+                      {ok, FormattedLog} = format_log(M, bulk, Log),
+                      State_1#logger_state{
+                        buffer = [Log#message_log{formatted_msg = FormattedLog}|Buf]}
+              end,
+    {reply, ok, State_2#logger_state{buf_begining = Now}};
 
-handle_call(bulk_output, _From, #logger_state{appender_mod  = Mod,
-                                              buffer = Buf} = State) ->
-    ?debugVal({Mod, Buf}),
-    NewState = bulk_output(Buf, State),
-    {reply, ok, NewState};
+handle_call(bulk_output, _From, #logger_state{buffer = Buf} = State) ->
+    State_1 = State#logger_state{is_buf_output = false},
+    State_2 = bulk_output_sub(Buf, State_1),
+    {reply, ok, State_2};
 
 handle_call(sync, _From, #logger_state{appender_mod = Mod} = State) ->
     catch erlang:apply(Mod, sync, [State]),
@@ -203,31 +213,23 @@ code_change(_OldVsn, State, _Extra) ->
 %%--------------------------------------------------------------------
 %% @doc
 %% @private
-format_log(M, Appender, Log) ->
-    case catch erlang:apply(M, format, [Appender, Log]) of
+format_log(M, Type, Log) ->
+    case catch erlang:apply(M, format, [Type, Log]) of
         {'EXIT', Cause0} ->
             Cause1 = element(1, Cause0),
             error_logger:error_msg("~p,~p,~p,~p~n",
                                    [{module, ?MODULE_STRING}, {function, "append_sub/3"},
                                     {line, ?LINE}, {body, Cause1}]),
             {error, Cause1};
-        FormattedLog when is_binary(FormattedLog) ->
-            {ok, FormattedLog};
-        FormattedLog when is_list(FormattedLog) ->
-            {ok, FormattedLog};
-        _ ->
-            error_logger:error_msg("~p,~p,~p,~p~n",
-                                   [{module, ?MODULE_STRING}, {function, "append_sub/3"},
-                                    {line, ?LINE}, {body, "Invalid formatted log message"}]),
-            {error, invalid_format}
+        FormattedLog ->
+            {ok, FormattedLog}
     end.
 
 %% @doc
 %% @private
-append_sub(Id, Log, #logger_state{appender_mod  = Mod,
-                                  appender_type = Appender,
-                                  callback      = M} = State) ->
-    case format_log(M, Appender, Log) of
+append_sub(Id, Log, #logger_state{appender_mod = Mod,
+                                  callback_mod = M} = State) ->
+    case format_log(M, split, Log) of
         {ok, FormattedLog} when is_binary(FormattedLog) ->
             NewState = maybe_rotate(Id, State),
             append_sub_1(Mod,
@@ -253,11 +255,9 @@ append_sub_1(Mod, LogMsg, State) ->
 
 %% @doc Output logs
 %% @private
--spec(bulk_output(list(any()), #logger_state{}) ->
+-spec(bulk_output_sub(list(any()), #logger_state{}) ->
              ok | {error, any()}).
-bulk_output(Logs, #logger_state{appender_mod = Mod} = State) ->
-    %% @TODO
-    ?debugVal({Mod, Logs, State}),
+bulk_output_sub(Logs, #logger_state{appender_mod = Mod} = State) ->
     erlang:apply(Mod, bulk_output, [Logs, State]).
 
 

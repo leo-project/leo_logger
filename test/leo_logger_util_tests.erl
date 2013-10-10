@@ -24,7 +24,7 @@
 %% @end
 %%======================================================================
 -module(leo_logger_util_tests).
--author('yosuke hara').
+-author('Yosuke Hara').
 
 -include("leo_logger.hrl").
 -include_lib("eunit/include/eunit.hrl").
@@ -50,7 +50,7 @@ setup() ->
     ok.
 
 teardown(_) ->
-    os:cmd("rm -rf " ++ ?TEST_LOG_DIR),
+    %% os:cmd("rm -rf " ++ ?TEST_LOG_DIR),
 
     leo_logger_sup:stop(),
     application:stop(leo_logger),

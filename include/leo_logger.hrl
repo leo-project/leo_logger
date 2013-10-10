@@ -54,18 +54,25 @@
 -define(DEF_ESEARCH_PORT,     9200).
 -define(DEF_ESEARCH_TIMEOUT,  5000).
 
+-ifdef(TEST).
+-define(DEF_ESEARCH_BUF_INTERVAL, 500).
+-else.
+-define(DEF_ESEARCH_BUF_INTERVAL, 3000).
+-endif.
+
 
 %%
 -record(logger_state, {appender_type    :: atom(),
                        appender_mod     :: atom(),
-                       callback         :: list(),
+                       callback_mod     :: atom(),
                        props            :: list(),
                        level = 0        :: pos_integer(),
                        hourstamp = -1   :: integer(),
 
                        buffer = []      :: list(any()),
                        buf_interval = 0 :: pos_integer(),
-                       buf_begining = 0 :: pos_integer()
+                       buf_begining = 0 :: pos_integer(),
+                       is_buf_output = false :: boolean()
                       }).
 
 -record(message_log,  {level              :: atom(),

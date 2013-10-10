@@ -24,7 +24,7 @@
 %% @end
 %%======================================================================
 -module(leo_logger_client_esearch_tests).
--author('yosuke hara').
+-author('Yosuke Hara').
 
 -include("leo_logger.hrl").
 -include_lib("eunit/include/eunit.hrl").
@@ -61,22 +61,22 @@ append_(_) ->
                                                              calendar:now_to_universal_time(os:timestamp())))),
 
     Msg1 = [{<<"@timestamp">>, Timestamp},
-            {<<"@bucket">>,    <<"bucket_1">>},
-            {<<"@gateway">>,   <<"gateway_0@127.0.0.1">>},
-            {<<"@method">>,    <<"GET">>},
+            {<<"bucket">>,     <<"bucket_1">>},
+            {<<"gateway">>,    <<"gateway_0@127.0.0.1">>},
+            {<<"method">>,     <<"GET">>},
             {<<"mime">>,       <<"text/html">>},
             {<<"request">>,    <<"bucket1/ABS.html">>},
-            {<<"response">>,   <<"200">>},
-            {<<"bytes">>,      <<"512">>}],
+            {<<"response">>,   200},
+            {<<"bytes">>,      512}],
 
     Msg2 = [{<<"@timestamp">>, Timestamp},
-            {<<"@bucket">>,    <<"bucket_1">>},
-            {<<"@gateway">>,   <<"gateway_1@127.0.0.1">>},
-            {<<"@method">>,    <<"PUT">>},
+            {<<"bucket">>,     <<"bucket_1">>},
+            {<<"gateway">>,    <<"gateway_1@127.0.0.1">>},
+            {<<"method">>,     <<"PUT">>},
             {<<"mime">>,       <<"text/html">>},
             {<<"request">>,    <<"bucket1/ADC.html">>},
-            {<<"response">>,   <<"200">>},
-            {<<"bytes">>,      <<"768">>}],
+            {<<"response">>,   200},
+            {<<"bytes">>,      768}],
 
     ok = leo_logger_client_esearch:append({LogId, #message_log{message = Msg1,
                                                                esearch = [{?ESEARCH_DOC_INDEX, <<"2013-10-03">>},
@@ -86,6 +86,10 @@ append_(_) ->
                                                                esearch = [{?ESEARCH_DOC_INDEX, <<"2013-10-03">>},
                                                                           {?ESEARCH_DOC_TYPE,  <<"bucket_1">>}]
                                                               }}),
+    timer:sleep(1000),
+    appender(100, LogId, Timestamp),
+    timer:sleep(1000),
+
     inspect(),
     ok.
 
@@ -94,12 +98,34 @@ append_(_) ->
 %%--------------------------------------------------------------------
 %%% INNER FUNCTIONS
 %%--------------------------------------------------------------------
+appender(0,_,_) ->
+    ok;
+appender(I, LogId, Timestamp) ->
+    Msg = [{<<"@timestamp">>, Timestamp},
+           {<<"bucket">>,     <<"bucket_2">>},
+           {<<"gateway">>,    <<"gateway_1@127.0.0.1">>},
+           {<<"method">>,     <<"DELETE">>},
+           {<<"mime">>,       <<"text/html">>},
+           {<<"request">>,    <<"bucket1/ALC.html">>},
+           {<<"response">>,   204},
+           {<<"bytes">>,      (I + 1024)}],
+    ok = leo_logger_client_esearch:append({LogId, #message_log{message = Msg,
+                                                               esearch = [{?ESEARCH_DOC_INDEX, <<"2013-10-03">>},
+                                                                          {?ESEARCH_DOC_TYPE,  <<"bucket_2">>}]
+                                                              }}),
+    appender(I-1, LogId, Timestamp).
+
+
 inspect() ->
     Ret1 = erlastic_search:search(<<"2013-10-03">>, <<"bucket_1">>, <<"gateway:gateway_1@127.0.0.1">>),
     Ret2 = erlastic_search:search(<<"2013-10-03">>, <<"bucket_1">>, <<"mime:html">>),
-    ?debugVal({Ret1, Ret2}),
+    Ret3 = erlastic_search:search(<<"2013-10-03">>, <<"bucket_2">>, <<"mime:html">>),
+    ?debugVal(Ret1),
+    ?debugVal(Ret2),
+    ?debugVal(Ret3),
     ?assertMatch({ok, _}, Ret1),
     ?assertMatch({ok, _}, Ret2),
+    ?assertMatch({ok, _}, Ret3),
     ok.
 
 -endif.

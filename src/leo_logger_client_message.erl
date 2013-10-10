@@ -114,7 +114,7 @@ fatal(Log) ->
 %%
 -spec(format(atom(), #message_log{}) ->
              string()).
-format(Appender, Log) ->
+format(_Type, Log) ->
     #message_log{format  = Format,
                  message = Message} = Log,
     FormattedMessage =
@@ -125,21 +125,16 @@ format(Appender, Log) ->
             NewMessage ->
                 NewMessage
         end,
-
-    Output = case Appender of
-                 ?LOG_APPENDER_FILE -> text;
-                 _Other             -> json
-             end,
-    format1(Output, Log#message_log{message = FormattedMessage}).
+    format_1(Log#message_log{message = FormattedMessage}).
 
 %% @private
--spec(format1(text | json, #message_log{}) ->
+-spec(format_1(#message_log{}) ->
              string()).
-format1(text, #message_log{level    = Level,
-                           module   = Module,
-                           function = Function,
-                           line     = Line,
-                           message  = Message}) ->
+format_1(#message_log{level    = Level,
+                      module   = Module,
+                      function = Function,
+                      line     = Line,
+                      message  = Message}) ->
     case catch lager_format:format("[~s]\t~s\t~s\t~w\t~s:~s\t~s\t~s\r\n",
                                    [log_level(Level),
                                     atom_to_list(node()),
@@ -148,27 +143,6 @@ format1(text, #message_log{level    = Level,
                                     Module, Function, integer_to_list(Line),
                                     Message], ?MAX_MSG_BODY_LEN) of
         {'EXIT', _Cause} ->
-            [];
-        Result ->
-            Result
-    end;
-
-format1(json, #message_log{level    =  Level,
-                           module   =  Module,
-                           function =  Function,
-                           line     =  Line,
-                           message  =  Message}) ->
-    Json = {[{log_level, log_level(Level)},
-             {node,      node()},
-             {module,    list_to_binary(Module)},
-             {function,  list_to_binary(Function)},
-             {line,      Line},
-             {message,   list_to_binary(Message)},
-             {unix_time, unixtime()},
-             {timestamp, leo_date:date_format()}
-            ]},
-    case catch jiffy:encode(Json) of
-        {'EXIT', _} ->
             [];
         Result ->
             Result

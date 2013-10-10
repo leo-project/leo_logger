@@ -40,6 +40,9 @@ behaviour_info(callbacks) ->
      %% bulk_output(list(), #logger_state{}) -> ok.
      {bulk_output, 2},
 
+     %% format(bulk|split, #logger_state{}) -> string()|binary().
+     {format, 2},
+
      %% sync(#logger_state{}) -> ok.
      {sync, 1},
 

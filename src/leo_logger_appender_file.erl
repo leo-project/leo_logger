@@ -41,7 +41,7 @@
 %%
 -spec(init(atom(), list(), list()) ->
              {ok, #logger_state{}}).
-init(Appender, Callback, Props) ->
+init(Appender, CallbackMod, Props) ->
     RootPath = leo_misc:get_value(?FILE_PROP_ROOT_PATH, Props),
     FileName = leo_misc:get_value(?FILE_PROP_FILE_NAME, Props),
     Level    = leo_misc:get_value(?FILE_PROP_LOG_LEVEL, Props),
@@ -69,10 +69,10 @@ init(Appender, Callback, Props) ->
         {CurrentFileName, Handler} ->
             {ok, #logger_state{appender_type = Appender,
                                appender_mod  = ?appender_mod(Appender),
+                               callback_mod  = CallbackMod,
                                props    = [{?FILE_PROP_FILE_NAME, BasePath2},
                                            {?FILE_PROP_CUR_NAME,  CurrentFileName},
                                            {?FILE_PROP_HANDLER,   Handler}],
-                               callback  = Callback,
                                level     = Level,
                                hourstamp = DateHour}}
     end.
@@ -107,10 +107,10 @@ sync(State) ->
 
 %% @doc Format a log message
 %%
--spec(format(atom(), #message_log{}) ->
+-spec(format(split|bulk, #message_log{}) ->
              list()).
-format(_Appender, #message_log{format  = Format,
-                               message = Message}) ->
+format(_Type, #message_log{format  = Format,
+                           message = Message}) ->
     case catch io_lib:format(Format, Message) of
         {'EXIT', _Cause} ->
             [];
@@ -155,7 +155,8 @@ open(BaseFileName, DateHour) ->
         _ ->
             void
     end,
-    _ = file:make_symlink(LogFileName, BaseFileName),
+
+    file:make_symlink(LogFileName, BaseFileName),
     {LogFileName, Handler}.
 
 

@@ -42,13 +42,13 @@
 %%
 -spec(init(atom(), list(), list()) ->
              {ok, #logger_state{}}).
-init(Appender, Callback, Props) ->
+init(Appender, CallbackMod, Props) ->
     {ok, #logger_state{appender_type = Appender,
                        appender_mod  = ?appender_mod(Appender),
                        props         = Props,
-                       callback      = Callback,
+                       callback_mod  = CallbackMod,
                        level         = 0,
-                       buf_interval  = 3000,
+                       buf_interval  = ?DEF_ESEARCH_BUF_INTERVAL,
                        buf_begining  = 0
                       }}.
 
@@ -60,8 +60,8 @@ init(Appender, Callback, Props) ->
 append(#message_log{formatted_msg = FormattedMsg,
                     esearch = ESearch}, #logger_state{props = Props} = State) ->
     {Host, Port, Timeout} = get_env(Props),
-    Index   = leo_misc:get_value(?ESEARCH_DOC_INDEX,    ESearch),
-    Type    = leo_misc:get_value(?ESEARCH_DOC_TYPE,     ESearch),
+    Index = leo_misc:get_value(?ESEARCH_DOC_INDEX, ESearch),
+    Type  = leo_misc:get_value(?ESEARCH_DOC_TYPE,  ESearch),
 
     catch erlastic_search:index_doc(#erls_params{host     = Host,
                                                  port     = Port,
@@ -73,9 +73,30 @@ append(#message_log{formatted_msg = FormattedMsg,
 
 -spec(bulk_output(list(any()), #logger_state{}) ->
              #logger_state{}).
-bulk_output(_Logs, State) ->
-    %% @TODO
-    ?debugVal(_Logs),
+bulk_output(Logs, #logger_state{props = Props} = State) ->
+    {Host, Port, Timeout} = get_env(Props),
+    spawn(fun() ->
+                  Fun  = fun(#message_log{formatted_msg = Msg}) ->
+                                 {Index, Type, Id, Doc} = Msg,
+                                 Header = jsx:encode(
+                                            [{<<"index">>,
+                                              [
+                                               {<<"_index">>, Index},
+                                               {<<"_type">>, Type},
+                                               {<<"_id">>, Id}
+                                              ]
+                                             }
+                                            ]),
+                                 [Header, <<"\n">>, jsx:encode(Doc), <<"\n">>]
+                         end,
+                  Params = #erls_params{host     = Host,
+                                        port     = Port,
+                                        timeout  = Timeout,
+                                        ctimeout = Timeout},
+                  Body = lists:map(Fun, Logs),
+                  catch erls_resource:post(
+                          Params, <<"/_bulk">>, [], [], iolist_to_binary(Body), [])
+          end),
     State#logger_state{buffer = []}.
 
 
@@ -89,10 +110,18 @@ sync(_State) ->
 
 %% @doc Format a log message
 %%
--spec(format(atom(), #message_log{}) ->
+-spec(format(split|bulk, #message_log{}) ->
              list()).
-format(_Appender, #message_log{message = Message}) ->
-    Message.
+format(split, #message_log{message = Message}) ->
+    Message;
+format(bulk, #message_log{message = Message,
+                          esearch = ESearch}) ->
+    Index = leo_misc:get_value(?ESEARCH_DOC_INDEX, ESearch),
+    Type  = leo_misc:get_value(?ESEARCH_DOC_TYPE,  ESearch),
+    Id = << (list_to_binary(atom_to_list(node())))/binary,
+            "-",
+            (list_to_binary(integer_to_list(leo_date:clock())))/binary >>,
+    {Index, Type, Id, Message}.
 
 
 %% @doc Rotate a log file
