@@ -55,7 +55,7 @@
 -define(DEF_ESEARCH_TIMEOUT,  5000).
 
 -ifdef(TEST).
--define(DEF_ESEARCH_BUF_INTERVAL, 500).
+-define(DEF_ESEARCH_BUF_INTERVAL, 750).
 -else.
 -define(DEF_ESEARCH_BUF_INTERVAL, 3000).
 -endif.

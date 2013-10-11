@@ -94,8 +94,16 @@ bulk_output(Logs, #logger_state{props = Props} = State) ->
                                         timeout  = Timeout,
                                         ctimeout = Timeout},
                   Body = lists:map(Fun, Logs),
-                  catch erls_resource:post(
-                          Params, <<"/_bulk">>, [], [], iolist_to_binary(Body), [])
+                  case catch erls_resource:post(
+                               Params, <<"/_bulk">>, [], [], iolist_to_binary(Body), []) of
+                      {'EXIT', Cause0} ->
+                          Cause1 = element(1, Cause0),
+                          error_logger:error_msg("~p,~p,~p,~p~n",
+                                                 [{module, ?MODULE_STRING}, {function, "bulk_output/2"},
+                                                  {line, ?LINE}, {body, Cause1}]);
+                      _Res ->
+                          ok
+                  end
           end),
     State#logger_state{buffer = []}.
 

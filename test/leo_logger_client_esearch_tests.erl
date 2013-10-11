@@ -87,8 +87,8 @@ append_(_) ->
                                                                           {?ESEARCH_DOC_TYPE,  <<"bucket_1">>}]
                                                               }}),
     timer:sleep(1000),
-    appender(100, LogId, Timestamp),
-    timer:sleep(1000),
+    appender(20, LogId, Timestamp),
+    timer:sleep(2000),
 
     inspect(),
     ok.

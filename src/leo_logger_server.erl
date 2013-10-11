@@ -137,16 +137,8 @@ handle_call({append, {Id, Log, Level}}, _From, #logger_state{callback_mod = M,
                                                              is_buf_output = IsBufOutput
                                                             } = State) ->
     Now = leo_math:floor(leo_date:clock() / 1000),
-    State_2 = case ((Now - BufBegining) > BufInterval) of
+    State_2 = case ((Now - BufBegining) < BufInterval) of
                   true ->
-                      case (Level >= RegisteredLevel) of
-                          true ->
-                              {ok, FormattedLog} = format_log(M, bulk, Log),
-                              bulk_output_sub([Log#message_log{formatted_msg = FormattedLog}|Buf], State);
-                          false ->
-                              State
-                      end;
-                  false ->
                       State_1 = case IsBufOutput of
                                     true ->
                                         State;
@@ -156,14 +148,24 @@ handle_call({append, {Id, Log, Level}}, _From, #logger_state{callback_mod = M,
                                 end,
                       {ok, FormattedLog} = format_log(M, bulk, Log),
                       State_1#logger_state{
-                        buffer = [Log#message_log{formatted_msg = FormattedLog}|Buf]}
+                        buffer = [Log#message_log{formatted_msg = FormattedLog}|Buf]};
+                  false ->
+                      case (Level >= RegisteredLevel) of
+                          true ->
+                              {ok, FormattedLog} = format_log(M, bulk, Log),
+                              bulk_output_sub([Log#message_log{formatted_msg = FormattedLog}|Buf], State);
+                          false ->
+                              State
+                      end
               end,
     {reply, ok, State_2#logger_state{buf_begining = Now}};
 
+
+handle_call(bulk_output, _From, #logger_state{buffer = [] } = State) ->
+    {reply, ok, State#logger_state{is_buf_output = false}};
 handle_call(bulk_output, _From, #logger_state{buffer = Buf} = State) ->
-    State_1 = State#logger_state{is_buf_output = false},
-    State_2 = bulk_output_sub(Buf, State_1),
-    {reply, ok, State_2};
+    State_1 = bulk_output_sub(Buf, State),
+    {reply, ok, State_1#logger_state{is_buf_output = false}};
 
 handle_call(sync, _From, #logger_state{appender_mod = Mod} = State) ->
     catch erlang:apply(Mod, sync, [State]),
