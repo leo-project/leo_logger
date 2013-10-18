@@ -33,7 +33,7 @@
 -include_lib("erlastic_search/include/erlastic_search.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
--export([init/3, append/2, sync/1, format/2, rotate/2]).
+-export([init/3, append/2, bulk_output/2, sync/1, format/2, rotate/2]).
 
 %%--------------------------------------------------------------------
 %% API
@@ -42,32 +42,69 @@
 %%
 -spec(init(atom(), list(), list()) ->
              {ok, #logger_state{}}).
-init(Appender, Callback, Props) ->
+init(Appender, CallbackMod, Props) ->
+    BulkDuration = leo_misc:get_value(
+                     ?ESEARCH_PROP_BULK_DURATION, Props, ?DEF_ESEARCH_BULK_DURATION),
     {ok, #logger_state{appender_type = Appender,
                        appender_mod  = ?appender_mod(Appender),
-                       props     = Props,
-                       callback  = Callback,
-                       level     = 0}}.
+                       props         = Props,
+                       callback_mod  = CallbackMod,
+                       level         = 0,
+                       buf_duration  = BulkDuration,
+                       buf_begining  = 0
+                      }}.
 
 
 %% @doc Append a message to a file
 %%
 -spec(append(list(), #logger_state{}) ->
-             ok).
+             #logger_state{}).
 append(#message_log{formatted_msg = FormattedMsg,
-                    esearch = ESearch}, #logger_state{props = Props} = _State) ->
-    Host    = leo_misc:get_value(?ESEARCH_PROP_HOST,    Props, ?DEF_ESEARCH_HOST),
-    Port    = leo_misc:get_value(?ESEARCH_PROP_PORT,    Props, ?DEF_ESEARCH_PORT),
-    Timeout = leo_misc:get_value(?ESEARCH_PROP_TIMEOUT, Props, ?DEF_ESEARCH_TIMEOUT),
-    Index   = leo_misc:get_value(?ESEARCH_DOC_INDEX,    ESearch),
-    Type    = leo_misc:get_value(?ESEARCH_DOC_TYPE,     ESearch),
+                    esearch = ESearch}, #logger_state{props = Props} = State) ->
+    {Host, Port, Timeout} = get_env(Props),
+    Index = leo_misc:get_value(?ESEARCH_DOC_INDEX, ESearch),
+    Type  = leo_misc:get_value(?ESEARCH_DOC_TYPE,  ESearch),
 
-    catch erlastic_search:index_doc(#erls_params{host     = list_to_binary(Host),
+    catch erlastic_search:index_doc(#erls_params{host     = Host,
                                                  port     = Port,
                                                  timeout  = Timeout,
                                                  ctimeout = Timeout},
                                     Index, Type, FormattedMsg),
-    ok.
+    State.
+
+
+-spec(bulk_output(list(any()), #logger_state{}) ->
+             #logger_state{}).
+bulk_output(Logs, #logger_state{props = Props} = State) ->
+    {Host, Port, Timeout} = get_env(Props),
+    spawn(fun() ->
+                  Fun  = fun(#message_log{formatted_msg = Msg}) ->
+                                 {Index, Type, Id, Doc} = Msg,
+                                 Header = jsx:encode(
+                                            [{<<"index">>,
+                                              [{<<"_index">>, Index},
+                                               {<<"_type">>,  Type},
+                                               {<<"_id">>,    Id}]
+                                             }]),
+                                 [Header, <<"\n">>, jsx:encode(Doc), <<"\n">>]
+                         end,
+                  Params = #erls_params{host     = Host,
+                                        port     = Port,
+                                        timeout  = Timeout,
+                                        ctimeout = Timeout},
+                  Body = lists:map(Fun, Logs),
+                  case catch erls_resource:post(
+                               Params, <<"/_bulk">>, [], [], iolist_to_binary(Body), []) of
+                      {'EXIT', Cause0} ->
+                          Cause1 = element(1, Cause0),
+                          error_logger:error_msg("~p,~p,~p,~p~n",
+                                                 [{module, ?MODULE_STRING}, {function, "bulk_output/2"},
+                                                  {line, ?LINE}, {body, Cause1}]);
+                      _Res ->
+                          ok
+                  end
+          end),
+    State#logger_state{buffer = []}.
 
 
 %% @doc Sync a file
@@ -80,10 +117,18 @@ sync(_State) ->
 
 %% @doc Format a log message
 %%
--spec(format(atom(), #message_log{}) ->
+-spec(format(split|bulk, #message_log{}) ->
              list()).
-format(_Appender, #message_log{message = Message}) ->
-    Message.
+format(split, #message_log{message = Message}) ->
+    Message;
+format(bulk, #message_log{message = Message,
+                          esearch = ESearch}) ->
+    Index = leo_misc:get_value(?ESEARCH_DOC_INDEX, ESearch),
+    Type  = leo_misc:get_value(?ESEARCH_DOC_TYPE,  ESearch),
+    Id = << (list_to_binary(atom_to_list(node())))/binary,
+            "-",
+            (list_to_binary(integer_to_list(leo_date:clock())))/binary >>,
+    {Index, Type, Id, Message}.
 
 
 %% @doc Rotate a log file
@@ -91,9 +136,7 @@ format(_Appender, #message_log{message = Message}) ->
 -spec(rotate(integer(), #logger_state{}) ->
              {ok, #logger_state{}}).
 rotate(Hours, #logger_state{props = Props} = State) ->
-    Host    = leo_misc:get_value(?ESEARCH_PROP_HOST,    Props),
-    Port    = leo_misc:get_value(?ESEARCH_PROP_PORT,    Props),
-    Timeout = leo_misc:get_value(?ESEARCH_PROP_TIMEOUT, Props),
+    {Host, Port, Timeout} = get_env(Props),
     catch erlastic_search:flush_all(#erls_params{host     = Host,
                                                  port     = Port,
                                                  timeout  = Timeout,
@@ -103,4 +146,10 @@ rotate(Hours, #logger_state{props = Props} = State) ->
 %%--------------------------------------------------------------------
 %%% INNER FUNCTIONS
 %%--------------------------------------------------------------------
+%% @private
+get_env(Props) ->
+    Host    = leo_misc:get_value(?ESEARCH_PROP_HOST,    Props, ?DEF_ESEARCH_HOST),
+    Port    = leo_misc:get_value(?ESEARCH_PROP_PORT,    Props, ?DEF_ESEARCH_PORT),
+    Timeout = leo_misc:get_value(?ESEARCH_PROP_TIMEOUT, Props, ?DEF_ESEARCH_TIMEOUT),
+    {list_to_binary(Host), Port, Timeout}.
 

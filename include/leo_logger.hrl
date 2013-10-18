@@ -45,6 +45,7 @@
 -define(ESEARCH_PROP_TIMEOUT, 'esearch_timeout').
 -define(ESEARCH_DOC_INDEX,    'esearch_doc_index').
 -define(ESEARCH_DOC_TYPE,     'esearch_doc_type').
+-define(ESEARCH_PROP_BULK_DURATION, 'esearch_bulk_duration').
 
 -define(LOG_ID_FILE_INFO,  'leo_logger_file_i').
 -define(LOG_ID_FILE_ERROR, 'leo_logger_file_e').
@@ -53,26 +54,31 @@
 -define(DEF_ESEARCH_HOST,     "127.0.0.1").
 -define(DEF_ESEARCH_PORT,     9200).
 -define(DEF_ESEARCH_TIMEOUT,  5000).
+-define(DEF_ESEARCH_BULK_DURATION, 3000).
 
 
 %%
--record(logger_state, {appender_type  :: atom(),
-                       appender_mod   :: atom(),
-                       callback       :: list(),
-                       props          :: list(),
-                       level = 0      :: integer(),
-                       hourstamp = -1 :: integer(),
-                       esearch = []   :: list(tuple())
+-record(logger_state, {appender_type    :: atom(),
+                       appender_mod     :: atom(),
+                       callback_mod     :: atom(),
+                       props            :: list(),
+                       level = 0        :: pos_integer(),
+                       hourstamp = -1   :: integer(),
+
+                       buffer = []      :: list(any()),
+                       buf_duration = 0 :: pos_integer(),
+                       buf_begining = 0 :: pos_integer(),
+                       is_buf_output = false :: boolean()
                       }).
 
--record(message_log,  {level         :: atom(),
-                       module = []   :: string(),
-                       function = [] :: string(),
-                       line = 0      :: integer(),
-                       format  = []  :: string(),
-                       message = []  :: list(),
+-record(message_log,  {level              :: atom(),
+                       module = []        :: string(),
+                       function = []      :: string(),
+                       line = 0           :: pos_integer(),
+                       format  = []       :: string(),
+                       message = []       :: list(),
                        formatted_msg = [] :: list(),
-                       esearch = []  :: list(tuple())
+                       esearch = []       :: list(tuple())
                       }).
 
 

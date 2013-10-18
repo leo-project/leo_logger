@@ -32,7 +32,7 @@
 -include("leo_logger.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
--export([init/3, append/2, sync/1, format/2, rotate/2]).
+-export([init/3, append/2, bulk_output/2, sync/1, format/2, rotate/2]).
 
 %%--------------------------------------------------------------------
 %% API
@@ -41,7 +41,7 @@
 %%
 -spec(init(atom(), list(), list()) ->
              {ok, #logger_state{}}).
-init(Appender, Callback, Props) ->
+init(Appender, CallbackMod, Props) ->
     RootPath = leo_misc:get_value(?FILE_PROP_ROOT_PATH, Props),
     FileName = leo_misc:get_value(?FILE_PROP_FILE_NAME, Props),
     Level    = leo_misc:get_value(?FILE_PROP_LOG_LEVEL, Props),
@@ -69,10 +69,10 @@ init(Appender, Callback, Props) ->
         {CurrentFileName, Handler} ->
             {ok, #logger_state{appender_type = Appender,
                                appender_mod  = ?appender_mod(Appender),
+                               callback_mod  = CallbackMod,
                                props    = [{?FILE_PROP_FILE_NAME, BasePath2},
                                            {?FILE_PROP_CUR_NAME,  CurrentFileName},
                                            {?FILE_PROP_HANDLER,   Handler}],
-                               callback  = Callback,
                                level     = Level,
                                hourstamp = DateHour}}
     end.
@@ -81,11 +81,19 @@ init(Appender, Callback, Props) ->
 %% @doc Append a message to a file
 %%
 -spec(append(list(), #logger_state{}) ->
-             ok).
+             #logger_state{}).
 append(#message_log{formatted_msg = FormattedMsg}, State) ->
     Handler = leo_misc:get_value(?FILE_PROP_HANDLER, State#logger_state.props),
     catch file:write(Handler, lists:flatten(FormattedMsg)),
-    ok.
+    State.
+
+
+%% @doc Output messages
+%%
+-spec(bulk_output(list(), #logger_state{}) ->
+             #logger_state{}).
+bulk_output(_Logs, State) ->
+    State.
 
 
 %% @doc Sync a file
@@ -99,10 +107,10 @@ sync(State) ->
 
 %% @doc Format a log message
 %%
--spec(format(atom(), #message_log{}) ->
+-spec(format(split|bulk, #message_log{}) ->
              list()).
-format(_Appender, #message_log{format  = Format,
-                               message = Message}) ->
+format(_Type, #message_log{format  = Format,
+                           message = Message}) ->
     case catch io_lib:format(Format, Message) of
         {'EXIT', _Cause} ->
             [];
@@ -147,7 +155,8 @@ open(BaseFileName, DateHour) ->
         _ ->
             void
     end,
-    _ = file:make_symlink(LogFileName, BaseFileName),
+
+    file:make_symlink(LogFileName, BaseFileName),
     {LogFileName, Handler}.
 
 

@@ -24,7 +24,7 @@
 %% @end
 %%======================================================================
 -module(leo_logger_client_common_tests).
--author('yosuke hara').
+-author('Yosuke Hara').
 
 -include("leo_logger.hrl").
 -include_lib("eunit/include/eunit.hrl").

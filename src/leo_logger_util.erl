@@ -62,7 +62,7 @@ new(Id, Appender, Callback, RootPath, FileName) ->
 
 -spec(new(atom(), log_appender(), list(), string(), string(), integer()) ->
              ok | {error, any()}).
-new(Id, Appender, [_M, _F] = Callback, RootPath, FileName, Level) ->
+new(Id, Appender, Callback, RootPath, FileName, Level) ->
     io:format("id:~p, path:~p, filename:~p~n", [Id, RootPath, FileName]),
 
     ok = start_app(),

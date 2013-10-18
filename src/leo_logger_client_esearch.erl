@@ -30,7 +30,7 @@
 -include("leo_logger.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
--export([new/5, init/3,
+-export([new/2, new/6, init/3,
          format/2, append/1, append/2, sync/1, rotate/2]).
 
 %%--------------------------------------------------------------------
@@ -38,13 +38,22 @@
 %%--------------------------------------------------------------------
 %% @doc Create loggers for message logs
 %%
--spec(new(atom(), atom(), string(), pos_integer(), pos_integer()) ->
+-spec(new(atom(), atom()) ->
              ok).
-new(LogGroup, LogId, Host, Port, Timeout) ->
-    ok = leo_logger_util:new(LogId, ?LOG_APPENDER_ESEARCH, [?MODULE, format],
-                             [{?ESEARCH_PROP_HOST,    Host},
-                              {?ESEARCH_PROP_PORT,    Port},
-                              {?ESEARCH_PROP_TIMEOUT, Timeout}]),
+new(LogGroup, LogId) ->
+    new(LogGroup, LogId,
+        ?ESEARCH_PROP_HOST, ?ESEARCH_PROP_PORT,
+        ?ESEARCH_PROP_TIMEOUT, ?ESEARCH_PROP_BULK_DURATION).
+
+-spec(new(atom(), atom(), string(), pos_integer(), pos_integer(), pos_integer()) ->
+             ok).
+new(LogGroup, LogId, Host, Port, Timeout, BulkDuration) ->
+    ok = leo_logger_util:new(LogId, ?LOG_APPENDER_ESEARCH, ?MODULE,
+                             [{?ESEARCH_PROP_HOST, Host},
+                              {?ESEARCH_PROP_PORT, Port},
+                              {?ESEARCH_PROP_TIMEOUT, Timeout},
+                              {?ESEARCH_PROP_BULK_DURATION, BulkDuration}
+                             ]),
     ok = leo_logger_util:add_appender(LogGroup, LogId),
     ok.
 
