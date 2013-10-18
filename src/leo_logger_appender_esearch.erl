@@ -43,12 +43,14 @@
 -spec(init(atom(), list(), list()) ->
              {ok, #logger_state{}}).
 init(Appender, CallbackMod, Props) ->
+    BulkDuration = leo_misc:get_value(
+                     ?ESEARCH_PROP_BULK_DURATION, Props, ?DEF_ESEARCH_BULK_DURATION),
     {ok, #logger_state{appender_type = Appender,
                        appender_mod  = ?appender_mod(Appender),
                        props         = Props,
                        callback_mod  = CallbackMod,
                        level         = 0,
-                       buf_interval  = ?DEF_ESEARCH_BUF_INTERVAL,
+                       buf_duration  = BulkDuration,
                        buf_begining  = 0
                       }}.
 
@@ -80,13 +82,10 @@ bulk_output(Logs, #logger_state{props = Props} = State) ->
                                  {Index, Type, Id, Doc} = Msg,
                                  Header = jsx:encode(
                                             [{<<"index">>,
-                                              [
-                                               {<<"_index">>, Index},
-                                               {<<"_type">>, Type},
-                                               {<<"_id">>, Id}
-                                              ]
-                                             }
-                                            ]),
+                                              [{<<"_index">>, Index},
+                                               {<<"_type">>,  Type},
+                                               {<<"_id">>,    Id}]
+                                             }]),
                                  [Header, <<"\n">>, jsx:encode(Doc), <<"\n">>]
                          end,
                   Params = #erls_params{host     = Host,

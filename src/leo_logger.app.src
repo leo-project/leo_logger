@@ -28,11 +28,6 @@
   {registered,   []},
   {applications, [kernel, stdlib]},
   {mod, {leo_logger_app, []}},
-  {env, [{profile,       false},
-         {elastic_search, [{host,    "127.0.0.1"},
-                           {port,    9200},
-                           {timeout, 10000}
-                          ]}
-        ]}
+  {env, [{profile,       false}]}
  ]
 }.

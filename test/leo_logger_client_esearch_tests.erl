@@ -56,7 +56,7 @@ teardown(_) ->
 %%--------------------------------------------------------------------
 append_(_) ->
     LogId = 'leo_logger_access',
-    ok = leo_logger_client_esearch:new('log_group_access', LogId, "127.0.0.1", 9200, 5000),
+    ok = leo_logger_client_esearch:new('log_group_access', LogId, "127.0.0.1", 9200, 5000, 500),
     Timestamp = list_to_binary(leo_date:date_format('utc', calendar:datetime_to_gregorian_seconds(
                                                              calendar:now_to_universal_time(os:timestamp())))),
 

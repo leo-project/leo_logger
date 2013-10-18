@@ -122,7 +122,7 @@ handle_call({stop, Id}, _From, State) ->
     {stop, normal, ok, State};
 
 handle_call({append, {Id, Log, Level}}, _From, #logger_state{level = RegisteredLevel,
-                                                             buf_interval = 0} = State) ->
+                                                             buf_duration = 0} = State) ->
     NewState = case (Level >= RegisteredLevel) of
                    true  -> append_sub(Id, Log, State);
                    false -> State
@@ -132,7 +132,7 @@ handle_call({append, {Id, Log, Level}}, _From, #logger_state{level = RegisteredL
 handle_call({append, {Id, Log, Level}}, _From, #logger_state{callback_mod = M,
                                                              level  = RegisteredLevel,
                                                              buffer = Buf,
-                                                             buf_interval  = BufInterval,
+                                                             buf_duration  = BufInterval,
                                                              buf_begining  = BufBegining,
                                                              is_buf_output = IsBufOutput
                                                             } = State) ->

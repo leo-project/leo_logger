@@ -45,6 +45,7 @@
 -define(ESEARCH_PROP_TIMEOUT, 'esearch_timeout').
 -define(ESEARCH_DOC_INDEX,    'esearch_doc_index').
 -define(ESEARCH_DOC_TYPE,     'esearch_doc_type').
+-define(ESEARCH_PROP_BULK_DURATION, 'esearch_bulk_duration').
 
 -define(LOG_ID_FILE_INFO,  'leo_logger_file_i').
 -define(LOG_ID_FILE_ERROR, 'leo_logger_file_e').
@@ -53,12 +54,7 @@
 -define(DEF_ESEARCH_HOST,     "127.0.0.1").
 -define(DEF_ESEARCH_PORT,     9200).
 -define(DEF_ESEARCH_TIMEOUT,  5000).
-
--ifdef(TEST).
--define(DEF_ESEARCH_BUF_INTERVAL, 750).
--else.
--define(DEF_ESEARCH_BUF_INTERVAL, 3000).
--endif.
+-define(DEF_ESEARCH_BULK_DURATION, 3000).
 
 
 %%
@@ -70,7 +66,7 @@
                        hourstamp = -1   :: integer(),
 
                        buffer = []      :: list(any()),
-                       buf_interval = 0 :: pos_integer(),
+                       buf_duration = 0 :: pos_integer(),
                        buf_begining = 0 :: pos_integer(),
                        is_buf_output = false :: boolean()
                       }).
