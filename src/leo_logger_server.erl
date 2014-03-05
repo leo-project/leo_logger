@@ -82,7 +82,7 @@ sync(Id) ->
 -spec(rotate(atom()) ->
              ok).
 rotate(Id) ->
-    gen_server:cast(Id, {rotate, Id}).
+    gen_server:cast(Id, rotate).
 
 
 %%--------------------------------------------------------------------
@@ -182,8 +182,8 @@ handle_cast({append, {Log, Level}}, #logger_state{level = RegisteredLevel} = Sta
                end,
     {noreply, NewState};
 
-handle_cast({rotate, Id}, State) ->
-    {noreply, defer_rotate(Id, State)}.
+handle_cast(rotate, State) ->
+    {noreply, defer_rotate(State)}.
 
 
 %% Function: handle_info(Info, State) -> {noreply, State}          |
@@ -262,10 +262,10 @@ bulk_output_sub(Logs, #logger_state{appender_mod = Mod} = State) ->
 
 %% @doc Defer for a rotating log
 %% @private
--spec(defer_rotate(atom(), #logger_state{}) ->
+-spec(defer_rotate(#logger_state{}) ->
              ok).
-defer_rotate(_Id, #logger_state{appender_mod = Module,
-                                hourstamp    = HourStamp} = State) ->
+defer_rotate(#logger_state{appender_mod = Module,
+                           hourstamp    = HourStamp} = State) ->
     {{Y, M, D}, {H, _, _}} = calendar:now_to_local_time(now()),
     ThisHour = {Y, M, D, H},
 
