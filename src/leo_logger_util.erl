@@ -45,18 +45,6 @@ new(Id, Appender, Callback) ->
 new(Id, Appender, Callback, Props) ->
     ok = start_app(),
     start_child(Id, Appender, Callback, Props).
-    %% ChildSpec = {Id,
-    %%              {leo_logger_server, start_link,
-    %%                [Id, Appender, Callback, Props]},
-    %%               permanent, 2000, worker, [leo_logger_server]},
-    %% case supervisor:start_child(leo_logger_sup, ChildSpec) of
-    %%     {ok, _Pid} ->
-    %%         ok;
-    %%     {error, {already_started, _Pid}} ->
-    %%         ok;
-    %%     Error ->
-    %%         Error
-    %% end.
 
 
 -spec(new(atom(), log_appender(), list(), string(), string()) ->
@@ -76,22 +64,6 @@ new(Id, Appender, Callback, RootPath, FileName, Level) ->
     start_child(Id, Appender, Callback, [{?FILE_PROP_ROOT_PATH, NewRootPath},
                                          {?FILE_PROP_FILE_NAME, FileName},
                                          {?FILE_PROP_LOG_LEVEL, Level}]).
-
-    %% ChildSpec = {Id,
-    %%              {leo_logger_server, start_link,
-    %%               [Id, Appender, Callback, [{?FILE_PROP_ROOT_PATH, NewRootPath},
-    %%                                         {?FILE_PROP_FILE_NAME, FileName},
-    %%                                         {?FILE_PROP_LOG_LEVEL, Level}]]},
-    %%              permanent, 2000, worker, [leo_logger_server]},
-    %% case supervisor:start_child(leo_logger_sup, ChildSpec) of
-    %%     {ok, _Pid} ->
-    %%         ok;
-    %%     {error, {already_started, _Pid}} ->
-    %%         ok;
-    %%     Error ->
-    %%         Error
-    %% end.
-
 
 %% @doc add an appender into the ets
 %%

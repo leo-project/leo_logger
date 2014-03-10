@@ -67,15 +67,6 @@ stop() ->
 %% @private
 init([]) ->
     {ok, {{one_for_one, 5, 60}, []}}.
-    %% {ok, {{simple_one_for_one, 5, 60},
-    %%       [
-    %%        {leo_logger_server,
-    %%         {leo_logger_server, start_link, []},
-    %%         permanent, 2000, worker, [leo_logger_server]}
-    %%       ]
-    %%      }
-    %% }.
-
 
 %% ---------------------------------------------------------------------
 %% Inner Function(s)
