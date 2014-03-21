@@ -1,19 +1,19 @@
 %%
 %% %CopyrightBegin%
-%%
+%% 
 %% Copyright Ericsson AB 1996-2009. All Rights Reserved.
-%%
+%% 
 %% The contents of this file are subject to the Erlang Public License,
 %% Version 1.1, (the "License"); you may not use this file except in
 %% compliance with the License. You should have received a copy of the
 %% Erlang Public License along with this software. If not, it can be
 %% retrieved online at http://www.erlang.org/.
-%%
+%% 
 %% Software distributed under the License is distributed on an "AS IS"
 %% basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See
 %% the License for the specific language governing rights and limitations
 %% under the License.
-%%
+%% 
 %% %CopyrightEnd%
 %%
 
@@ -79,25 +79,25 @@ write_time({{Y,Mo,D},{H,Mi,S}},Type) ->
 -spec maybe_utc(t_datetime1970()) -> {utc, t_datetime1970()} | t_datetime1970().
 maybe_utc(Time) ->
     UTC = case application:get_env(sasl, utc_log) of
-              {ok, Val} ->
-                  Val;
-              undefined ->
-                  %% Backwards compatible:
-                  case application:get_env(stdlib, utc_log) of
-                      {ok, Val} ->
-                          Val;
-                      undefined ->
-                          false
-                  end
-          end,
+        {ok, Val} ->
+            Val;
+        undefined ->
+            %% Backwards compatible:
+            case application:get_env(stdlib, utc_log) of
+                {ok, Val} ->
+                    Val;
+                undefined ->
+                    false
+            end
+    end,
     if
         UTC =:= true ->
             UTCTime = case calendar:local_time_to_universal_time_dst(Time) of
-                          []     -> calendar:local_time();
-                          [T0|_] -> T0
-                      end,
+                []     -> calendar:local_time();
+                [T0|_] -> T0
+            end,
             {utc, UTCTime};
-        true ->
+        true -> 
             Time
     end.
 
@@ -170,7 +170,7 @@ format_exception(Class, Reason, StackTrace, FmtMaxBytes) ->
     StackFun = fun(M, _F, _A) -> (M =:= erl_eval) or (M =:= ?MODULE) end,
     %% EI = "    exception: ",
     EI = "    ",
-    [EI, lib_format_exception(1+length(EI), Class, Reason,
+    [EI, lib_format_exception(1+length(EI), Class, Reason, 
                               StackTrace, StackFun, PF), "\n"].
 
 format_mfa({M,F,Args}=StartF, FmtMaxBytes) ->
@@ -184,9 +184,9 @@ format_mfa({M,F,Args}=StartF, FmtMaxBytes) ->
     end.
 
 pp_fun(FmtMaxBytes) ->
-    fun(Term, _I) ->
+    fun(Term, _I) -> 
             {Str, _} = lager_trunc_io:print(Term, FmtMaxBytes),
-            io_lib:format("~s", [Str])
+            io_lib:format("~s", [Str]) 
     end.
 
 format_tag(Tag, Data, FmtMaxBytes) ->
@@ -195,9 +195,9 @@ format_tag(Tag, Data, FmtMaxBytes) ->
 
 %% From OTP stdlib's lib.erl ... These functions aren't exported.
 
-lib_format_exception(I, Class, Reason, StackTrace, StackFun, FormatFun)
-  when is_integer(I), I >= 1, is_function(StackFun, 3),
-       is_function(FormatFun, 2) ->
+lib_format_exception(I, Class, Reason, StackTrace, StackFun, FormatFun) 
+            when is_integer(I), I >= 1, is_function(StackFun, 3), 
+                 is_function(FormatFun, 2) ->
     Str = n_spaces(I-1),
     {Term,Trace1,Trace} = analyze_exception(Class, Reason, StackTrace),
     Expl0 = explain_reason(Term, Class, Trace1, FormatFun, Str),
@@ -209,7 +209,7 @@ lib_format_exception(I, Class, Reason, StackTrace, StackFun, FormatFun)
 
 analyze_exception(error, Term, Stack) ->
     case {is_stacktrace(Stack), Stack, Term} of
-        {true, [{_M,_F,As}=MFA|MFAs], function_clause} when is_list(As) ->
+        {true, [{_M,_F,As}=MFA|MFAs], function_clause} when is_list(As) -> 
             {Term,[MFA],MFAs};
         {true, [{shell,F,A}], function_clause} when is_integer(A) ->
             {Term, [{F,A}], []};
@@ -244,10 +244,10 @@ explain_reason({badarg,V}, error=Cl, [], PF, Str) -> % orelse, andalso
     format_value(V, <<"bad argument: ">>, Cl, PF, Str);
 explain_reason(badarith, error, [], _PF, _Str) ->
     <<"bad argument in an arithmetic expression">>;
-explain_reason({badarity,{Fun,As}}, error, [], _PF, _Str)
-  when is_function(Fun) ->
+explain_reason({badarity,{Fun,As}}, error, [], _PF, _Str) 
+                                      when is_function(Fun) ->
     %% Only the arity is displayed, not the arguments As.
-    io_lib:fwrite(<<"~s called with ~s">>,
+    io_lib:fwrite(<<"~s called with ~s">>, 
                   [format_fun(Fun), argss(length(As))]);
 explain_reason({badfun,Term}, error=Cl, [], PF, Str) ->
     format_value(Term, <<"bad function ">>, Cl, PF, Str);
@@ -280,7 +280,7 @@ explain_reason({try_clause,V}, error=Cl, [], PF, Str) ->
     format_value(V, <<"no try clause matching ">>, Cl, PF, Str);
 explain_reason(undef, error, [{M,F,A}], _PF, _Str) ->
     %% Only the arity is displayed, not the arguments, if there are any.
-    io_lib:fwrite(<<"undefined function ~s">>,
+    io_lib:fwrite(<<"undefined function ~s">>, 
                   [mfa_to_string(M, F, n_args(A))]);
 explain_reason({shell_undef,F,A}, error, [], _PF, _Str) ->
     %% Give nicer reports for undefined shell functions
@@ -300,7 +300,7 @@ explain_reason({unbound,V}, error, [], _PF, _Str) ->
 explain_reason({restricted_shell_bad_return, V}, exit=Cl, [], PF, Str) ->
     String = <<"restricted shell module returned bad value ">>,
     format_value(V, String, Cl, PF, Str);
-explain_reason({restricted_shell_disallowed,{ForMF,As}},
+explain_reason({restricted_shell_disallowed,{ForMF,As}}, 
                exit=Cl, [], PF, Str) ->
     %% ForMF can be a fun, but not a shell fun.
     String = <<"restricted shell does not allow ">>,
@@ -334,7 +334,7 @@ format_stacktrace1(S0, Stack0, PF, SF) ->
     format_stacktrace2(S, Stack, 1, PF).
 
 format_stacktrace2(S, [{M,F,A}|Fs], N, PF) when is_integer(A) ->
-    [io_lib:fwrite(<<"~s~s ~s">>,
+    [io_lib:fwrite(<<"~s~s ~s">>, 
                    [sep(N, S), origin(N, M, F, A), mfa_to_string(M, F, A)])
      | format_stacktrace2(S, Fs, N + 1, PF)];
 format_stacktrace2(S, [{M,F,As}|Fs], N, PF) when is_list(As) ->
@@ -396,7 +396,7 @@ format_call(ErrStr, Pre1, ForMForFun, As, PF) ->
     Arity = length(As),
     [ErrStr |
      case is_op(ForMForFun, Arity) of
-         {yes,Op} ->
+         {yes,Op} -> 
              format_op(ErrStr, Pre1, Op, As, PF);
          no ->
              MFs = mf_to_string(ForMForFun, Arity),
@@ -410,7 +410,7 @@ format_call(ErrStr, Pre1, ForMForFun, As, PF) ->
                  false ->
                      [MFs, S1]
              end
-     end].
+    end].
 
 mfa_to_string(M, F, A) ->
     io_lib:fwrite(<<"~s/~w">>, [mf_to_string({M, F}, A), A]).
@@ -460,9 +460,9 @@ count_nl(_) ->
     0.
 
 is_op(ForMForFun, A) ->
-    try
+    try 
         {erlang,F} = ForMForFun,
-        _ = erl_internal:op_type(F, A),
+        _ = erl_internal:op_type(F, A), 
         {yes,F}
     catch error:_ -> no
     end.
@@ -474,7 +474,7 @@ format_op(ErrStr, Pre, Op, [A1, A2], PF) ->
     OpS = atom_to_list(Op),
     Pre1 = [$\n | n_spaces(I1)],
     case count_nl(S1) > 0 of
-        true ->
+        true -> 
             [S1,Pre1,OpS,Pre1|S2];
         false ->
             OpS2 = io_lib:fwrite(<<" ~s ">>, [Op]),
@@ -495,7 +495,7 @@ pp_arguments(PF, As, I) ->
             A = list_to_atom(lists:duplicate(Ll, $a)),
             S0 = binary_to_list(iolist_to_binary(PF([A | T], I+1))),
             brackets_to_parens([$[,L,string:sub_string(S0, 2+Ll)]);
-        _ ->
+        _ -> 
             brackets_to_parens(PF(As, I+1))
     end.
 

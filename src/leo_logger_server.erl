@@ -43,7 +43,7 @@
 %% Function: start_link() -> {ok,Pid} | ignore | {error,Error}
 %% Description: Starts the server
 start_link(Id, Appender, CallbackMod, Props) ->
-    gen_server:start_link({local, Id}, ?MODULE, [Id, Appender, CallbackMod, Props], []).
+    gen_server:start_link({local, Id}, ?MODULE, [Appender, CallbackMod, Props], []).
 
 stop(Id) ->
     gen_server:call(Id, stop, 30000).
@@ -56,9 +56,9 @@ stop(Id) ->
 append(Method, Id, Log) ->
     append(Method, Id, Log, 0).
 append(?LOG_APPEND_SYNC, Id, Log, Level) ->
-    gen_server:call(Id, {append, {Id, Log, Level}});
+    gen_server:call(Id, {append, {Log, Level}});
 append(?LOG_APPEND_ASYNC, Id, Log, Level) ->
-    gen_server:cast(Id, {append, {Id, Log, Level}}).
+    gen_server:cast(Id, {append, {Log, Level}}).
 
 
 %% @doc output bulked message to a log-file.
@@ -82,7 +82,7 @@ sync(Id) ->
 -spec(rotate(atom()) ->
              ok).
 rotate(Id) ->
-    gen_server:cast(Id, {rotate, Id}).
+    gen_server:cast(Id, rotate).
 
 
 %%--------------------------------------------------------------------
@@ -93,12 +93,11 @@ rotate(Id) ->
 %%                         ignore               |
 %%                         {stop, Reason}
 %% Description: Initiates the server
-init([Id, Appender, CallbackMod, Props]) ->
+init([Appender, CallbackMod, Props]) ->
     Mod = ?appender_mod(Appender),
 
     case catch erlang:apply(Mod, init, [Appender, CallbackMod, Props]) of
         {ok, State} ->
-            defer_rotate(Id),
             {ok, State#logger_state{
                    buf_begining = leo_math:floor(leo_date:clock() / 1000)}};
         {'EXIT', Cause} ->
@@ -121,10 +120,10 @@ handle_call({stop, Id}, _From, State) ->
     end,
     {stop, normal, ok, State};
 
-handle_call({append, {Id, Log, Level}}, _From, #logger_state{level = RegisteredLevel,
-                                                             buf_duration = 0} = State) ->
+handle_call({append, {Log, Level}}, _From, #logger_state{level = RegisteredLevel,
+                                                         buf_duration = 0} = State) ->
     NewState = case (Level >= RegisteredLevel) of
-                   true  -> append_sub(Id, Log, State);
+                   true  -> append_sub(Log, State);
                    false -> State
                end,
     {reply, ok, NewState};
@@ -176,15 +175,15 @@ handle_call(sync, _From, #logger_state{appender_mod = Mod} = State) ->
 %%                                      {noreply, State, Timeout} |
 %%                                      {stop, Reason, State}
 %% Description: Handling cast messages
-handle_cast({append, {Id, Log, Level}}, #logger_state{level = RegisteredLevel} = State) ->
+handle_cast({append, {Log, Level}}, #logger_state{level = RegisteredLevel} = State) ->
     NewState = case (Level >= RegisteredLevel) of
-                   true  -> append_sub(Id, Log, State);
+                   true  -> append_sub(Log, State);
                    false -> State
                end,
     {noreply, NewState};
 
-handle_cast({rotate, Id}, State) ->
-    {noreply, maybe_rotate(Id, State)}.
+handle_cast(rotate, State) ->
+    {noreply, defer_rotate(State)}.
 
 
 %% Function: handle_info(Info, State) -> {noreply, State}          |
@@ -220,7 +219,7 @@ format_log(M, Type, Log) ->
         {'EXIT', Cause0} ->
             Cause1 = element(1, Cause0),
             error_logger:error_msg("~p,~p,~p,~p~n",
-                                   [{module, ?MODULE_STRING}, {function, "append_sub/3"},
+                                   [{module, ?MODULE_STRING}, {function, "append_sub/2"},
                                     {line, ?LINE}, {body, Cause1}]),
             {error, Cause1};
         FormattedLog ->
@@ -229,17 +228,15 @@ format_log(M, Type, Log) ->
 
 %% @doc
 %% @private
-append_sub(Id, Log, #logger_state{appender_mod = Mod,
-                                  callback_mod = M} = State) ->
+append_sub(Log, #logger_state{appender_mod = Mod,
+                              callback_mod = M} = State) ->
     case format_log(M, split, Log) of
         {ok, FormattedLog} when is_binary(FormattedLog) ->
-            NewState = maybe_rotate(Id, State),
             append_sub_1(Mod,
-                         Log#message_log{formatted_msg = FormattedLog}, NewState);
+                         Log#message_log{formatted_msg = FormattedLog}, State);
         {ok, FormattedLog} when is_list(FormattedLog) ->
-            NewState = maybe_rotate(Id, State),
             append_sub_1(Mod,
-                         Log#message_log{formatted_msg = lists:flatten(FormattedLog)}, NewState);
+                         Log#message_log{formatted_msg = lists:flatten(FormattedLog)}, State);
         {error,_Cause} ->
             State
     end.
@@ -265,20 +262,10 @@ bulk_output_sub(Logs, #logger_state{appender_mod = Mod} = State) ->
 
 %% @doc Defer for a rotating log
 %% @private
--spec(defer_rotate(atom()) ->
+-spec(defer_rotate(#logger_state{}) ->
              ok).
-defer_rotate(Id) ->
-    {_, {_, M, S}} = calendar:universal_time(),
-    Time = 1000 * (3600 - ((M * 60) + S)),
-    timer:apply_after(Time, ?MODULE, rotate, [Id]).
-
-
-%% @doc Maybe a rotating log
-%% @private
--spec(maybe_rotate(atom(), #logger_state{}) ->
-             #logger_state{}).
-maybe_rotate(Id, #logger_state{appender_mod = Module,
-                               hourstamp    = HourStamp} = State) ->
+defer_rotate(#logger_state{appender_mod = Module,
+                           hourstamp    = HourStamp} = State) ->
     {{Y, M, D}, {H, _, _}} = calendar:now_to_local_time(now()),
     ThisHour = {Y, M, D, H},
 
@@ -286,8 +273,6 @@ maybe_rotate(Id, #logger_state{appender_mod = Module,
         true ->
             State;
         false ->
-            defer_rotate(Id),
-
             case catch erlang:apply(Module, rotate, [ThisHour, State]) of
                 {ok, NewState} ->
                     NewState;
@@ -295,4 +280,3 @@ maybe_rotate(Id, #logger_state{appender_mod = Module,
                     State
             end
     end.
-

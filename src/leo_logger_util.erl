@@ -44,15 +44,7 @@ new(Id, Appender, Callback) ->
 
 new(Id, Appender, Callback, Props) ->
     ok = start_app(),
-
-    case supervisor:start_child(leo_logger_sup, [Id, Appender, Callback, Props]) of
-        {ok, _Pid} ->
-            ok;
-        {error, {already_started, _Pid}} ->
-            ok;
-        Error ->
-            Error
-    end.
+    start_child(Id, Appender, Callback, Props).
 
 
 -spec(new(atom(), log_appender(), list(), string(), string()) ->
@@ -64,26 +56,14 @@ new(Id, Appender, Callback, RootPath, FileName) ->
              ok | {error, any()}).
 new(Id, Appender, Callback, RootPath, FileName, Level) ->
     io:format("id:~p, path:~p, filename:~p~n", [Id, RootPath, FileName]),
-
     ok = start_app(),
-    NewRootPath =
-        case (string:len(RootPath) == string:rstr(RootPath, "/")) of
-            true  -> RootPath;
-            false -> RootPath ++ "/"
-        end,
-
-    case supervisor:start_child(leo_logger_sup,
-                                [Id, Appender, Callback, [{?FILE_PROP_ROOT_PATH, NewRootPath},
-                                                          {?FILE_PROP_FILE_NAME, FileName},
-                                                          {?FILE_PROP_LOG_LEVEL, Level}]]) of
-        {ok, _Pid} ->
-            ok;
-        {error, {already_started, _Pid}} ->
-            ok;
-        Error ->
-            Error
-    end.
-
+    NewRootPath = case (string:len(RootPath) == string:rstr(RootPath, "/")) of
+                      true  -> RootPath;
+                      false -> RootPath ++ "/"
+                  end,
+    start_child(Id, Appender, Callback, [{?FILE_PROP_ROOT_PATH, NewRootPath},
+                                         {?FILE_PROP_FILE_NAME, FileName},
+                                         {?FILE_PROP_LOG_LEVEL, Level}]).
 
 %% @doc add an appender into the ets
 %%
@@ -97,7 +77,7 @@ add_appender(GroupId, LoggerId) ->
 %%--------------------------------------------------------------------
 %% INNTERNAL FUNCTIONS
 %%--------------------------------------------------------------------
-%% @doc start object storage application.
+%% @doc Start object storage application.
 %%
 -spec(start_app() ->
              ok | {error, any()}).
@@ -114,3 +94,36 @@ start_app() ->
             Error
     end.
 
+
+%% @doc Launch a child worker
+%% @private
+-spec(start_child(atom(), log_appender(), atom(), list()) ->
+             ok | {error, any()}).
+start_child(Id, Appender, Callback, Props) ->
+    ChildSpec = {Id,
+                 {leo_logger_server, start_link,
+                  [Id, Appender, Callback, Props]},
+                 permanent, 2000, worker, [leo_logger_server]},
+    case supervisor:start_child(leo_logger_sup, ChildSpec) of
+        {ok, _Pid} ->
+            start_child_1(Id);
+        {error, {already_started, _Pid}} ->
+            start_child_1(Id);
+        Error ->
+            Error
+    end.
+
+%% @private
+start_child_1(Id)->
+    RotatorId = list_to_atom(lists:append([atom_to_list(Id),"_rotator"])),
+    ChildSpec = {RotatorId,
+                 {leo_logger_rotator, start_link, [Id, 'leo_logger_server']},
+                 permanent, 2000, worker, [leo_logger_rotator]},
+    case supervisor:start_child(leo_logger_sup, ChildSpec) of
+        {ok, _Pid} ->
+            ok;
+        {error, {already_started, _Pid}} ->
+            ok;
+        Error ->
+            Error
+    end.

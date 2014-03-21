@@ -40,26 +40,30 @@
 
 -export([format/1]).
 
-logger_test_() ->
-    {foreach, fun setup/0, fun teardown/1,
-     [{with, [T]} || T <- [fun append_/1,
-                           fun message_1_/1
-                          ]]}.
 
-setup() ->
-    ok.
+suite_test_() ->
+    {setup,
+     fun () ->
+             ok
+     end,
+     fun (_) ->
+             os:cmd("rm -rf " ++ ?TEST_LOG_DIR),
+             leo_logger_sup:stop(),
+             application:stop(leo_logger),
+             ok
+     end,
+     [
+      {"test append messages in to the log-file#1",
+       {timeout, 120, fun append/0}},
+      {"test append messages in to the log-file#2",
+       {timeout, 300, fun message/0}}
+     ]}.
 
-teardown(_) ->
-    os:cmd("rm -rf " ++ ?TEST_LOG_DIR),
-
-    leo_logger_sup:stop(),
-    application:stop(leo_logger),
-    ok.
 
 %%--------------------------------------------------------------------
 %%% TEST FUNCTIONS
 %%--------------------------------------------------------------------
-append_(_) ->
+append() ->
     ok = leo_logger_util:new(?TEST_LOG_ID, ?LOG_APPENDER_FILE, [?MODULE, format],
                              ?TEST_LOG_DIR, ?TEST_LOG_FILE),
 
@@ -67,25 +71,28 @@ append_(_) ->
     ?assertEqual(true, (Res /= [])),
     ok.
 
-message_1_(_) ->
+message() ->
     ok = leo_logger_client_message:new(?TEST_LOG_DIR, 0),
     inspect(),
+    append_messages(1000),
     ok.
 
 
 %%--------------------------------------------------------------------
 %%% INNER FUNCTIONS
 %%--------------------------------------------------------------------
+%% @private
 format(Log) ->
     Log.
 
+%% @private
 inspect() ->
     ok = ?debug("test_log", "~p", [debug]),
     ok = ?info("test_log",  "~p", [info]),
     ok = ?warn("test_log",  "~p", [warn]),
     ok = ?error("test_log", "~p", [error]),
     ok = ?fatal("test_log", "~p", [fatal]),
-    timer:sleep(1000),
+    timer:sleep(timer:seconds(3)),
 
     Error = {badarg,[{erlang,integer_to_list,[aaa],[]},
                      {erl_eval,do_apply,6,[{file,"erl_eval.erl"},{line,576}]},
@@ -106,6 +113,20 @@ inspect() ->
     ?assertEqual(true, (Res2 /= [])),
     ?assertEqual(true, (Res3 /= [])),
     ok.
+
+
+%% @private
+append_messages(0) ->
+    ok;
+append_messages(Index) ->
+    Msg = lists:append(["test_log_", integer_to_list(Index)]),
+    ok = ?debug(Msg, "~p", [debug]),
+    ok = ?info(Msg,  "~p", [info]),
+    ok = ?warn(Msg,  "~p", [warn]),
+    ok = ?error(Msg, "~p", [error]),
+    ok = ?fatal(Msg, "~p", [fatal]),
+    timer:sleep(erlang:phash2(leo_date:now(), 100)),
+    append_messages(Index - 1).
 
 -endif.
 
