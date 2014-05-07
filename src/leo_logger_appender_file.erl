@@ -32,7 +32,9 @@
 -include("leo_logger.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
--export([init/3, append/2, bulk_output/2, sync/1, format/2, rotate/2]).
+-export([init/3, append/2, bulk_output/2,
+         sync/1, format/2, rotate/2,
+         close/1]).
 
 %%--------------------------------------------------------------------
 %% API
@@ -134,6 +136,21 @@ rotate(Hours, #logger_state{props = Props} = State) ->
                                         {?FILE_PROP_CUR_NAME,  NewLogFileName},
                                         {?FILE_PROP_HANDLER,   NewHandler}],
                             hourstamp = Hours}}.
+
+
+%% @doc Close a log file
+-spec(close(#logger_state{}) ->
+             ok | {error, any()}).
+close(#logger_state{props = Props} = State) ->
+    %% Synchronize a log file
+    _ = sync(State),
+
+    %% Close a log file
+    CurrentFileName = leo_misc:get_value(?FILE_PROP_CUR_NAME, Props),
+    Handler         = leo_misc:get_value(?FILE_PROP_HANDLER,  Props),
+    ok = close(CurrentFileName, Handler),
+    ok.
+
 
 %%--------------------------------------------------------------------
 %%% INNER FUNCTIONS
