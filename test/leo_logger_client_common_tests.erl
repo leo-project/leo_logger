@@ -48,8 +48,6 @@ setup() ->
 
 teardown(_) ->
     os:cmd("rm -rf " ++ ?TEST_LOG_DIR),
-
-    leo_logger_sup:stop(),
     application:stop(leo_logger),
     ok.
 
