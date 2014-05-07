@@ -32,7 +32,9 @@
 -include("leo_logger.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
--export([init/3, append/2, bulk_output/2, sync/1, format/2, rotate/2]).
+-export([init/3, append/2, bulk_output/2,
+         sync/1, format/2, rotate/2,
+         close/1]).
 
 %%--------------------------------------------------------------------
 %% API
@@ -135,6 +137,17 @@ rotate(Hours, #logger_state{props = Props} = State) ->
                                         {?FILE_PROP_HANDLER,   NewHandler}],
                             hourstamp = Hours}}.
 
+
+%% @doc Close a log file
+-spec(close(#logger_state{}) ->
+             ok | {error, any()}).
+close(#logger_state{props = Props} = _State) ->
+    CurrentFileName = leo_misc:get_value(?FILE_PROP_CUR_NAME, Props),
+    Handler         = leo_misc:get_value(?FILE_PROP_HANDLER,  Props),
+    ok = close(CurrentFileName, Handler),
+    ok.
+
+
 %%--------------------------------------------------------------------
 %%% INNER FUNCTIONS
 %%--------------------------------------------------------------------
@@ -142,10 +155,10 @@ rotate(Hours, #logger_state{props = Props} = State) ->
 %% @private
 open(BaseFileName, DateHour) ->
     _ = filelib:ensure_dir(BaseFileName),
-    LogFileName = BaseFileName ++ suffix(DateHour),
-    io:format("* opening log file is [~p]~n", [LogFileName]),
+    FileName = BaseFileName ++ suffix(DateHour),
+    io:format("* opening log file is ~s~n", [FileName]),
 
-    {ok, Handler} = file:open(LogFileName, [read, write, raw]),
+    {ok, Handler} = file:open(FileName, [read, write, raw]),
     {ok, Location} = file:position(Handler, eof),
     fix_log(Handler, Location),
 
@@ -156,14 +169,14 @@ open(BaseFileName, DateHour) ->
             void
     end,
 
-    file:make_symlink(LogFileName, BaseFileName),
-    {LogFileName, Handler}.
+    file:make_symlink(FileName, BaseFileName),
+    {FileName, Handler}.
 
 
 %% @doc Close a log file
 %% @private
 close(FileName, Handler) ->
-    io:format("* closing log file: ~p~n", [FileName]),
+    io:format("* closing log file is ~s~n", [FileName]),
     catch file:datasync(Handler),
     catch file:close(Handler),
     ok.

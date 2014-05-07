@@ -33,7 +33,10 @@
 -include_lib("eunit/include/eunit.hrl").
 
 -export([start_link/4, stop/1]).
--export([append/3, append/4, bulk_output/1, sync/1, rotate/1]).
+-export([append/3, append/4,
+         bulk_output/1, sync/1, rotate/1,
+         close/1
+        ]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
 
@@ -83,6 +86,14 @@ sync(Id) ->
              ok).
 rotate(Id) ->
     gen_server:cast(Id, rotate).
+
+
+%% @doc Close a logger
+%%
+-spec(close(atom()) ->
+             ok).
+close(Id) ->
+    gen_server:call(Id, close).
 
 
 %%--------------------------------------------------------------------
@@ -168,6 +179,10 @@ handle_call(bulk_output, _From, #logger_state{buffer = Buf} = State) ->
 
 handle_call(sync, _From, #logger_state{appender_mod = Mod} = State) ->
     catch erlang:apply(Mod, sync, [State]),
+    {reply, ok, State};
+
+handle_call(close, _From, #logger_state{appender_mod = Mod} = State) ->
+    catch erlang:apply(Mod, close, [State]),
     {reply, ok, State}.
 
 

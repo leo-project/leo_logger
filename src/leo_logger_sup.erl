@@ -29,6 +29,8 @@
 
 -behaviour(supervisor).
 
+-include_lib("eunit/include/eunit.hrl").
+
 %% External API
 -export([start_link/0,
          stop/0]).
@@ -53,7 +55,8 @@ start_link() ->
 stop() ->
     case whereis(?MODULE) of
         Pid when is_pid(Pid) == true ->
-            exit(Pid, shutdown),
+            List = supervisor:which_children(Pid),
+            ok = close_logger(List),
             ok;
         _ -> not_started
     end.
@@ -71,4 +74,13 @@ init([]) ->
 %% ---------------------------------------------------------------------
 %% Inner Function(s)
 %% ---------------------------------------------------------------------
+%% @doc Stop a logger file
+%% @private
+close_logger([]) ->
+    ok;
+close_logger([{Id,_Pid, worker, ['leo_logger_server' = Mod|_]}|T]) ->
+    ok = Mod:close(Id),
+    close_logger(T);
+close_logger([_|T]) ->
+    close_logger(T).
 
