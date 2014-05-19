@@ -51,7 +51,7 @@ new(RootPath, Level) ->
     new(RootPath, Level, [{?LOG_ID_FILE_INFO,  ?LOG_APPENDER_FILE},
                           {?LOG_ID_FILE_ERROR, ?LOG_APPENDER_FILE}]).
 
--spec(new(list(), string(), integer()) ->
+-spec(new(string(), integer(), [_]) ->
              ok).
 new(RootPath, Level, Loggers) ->
     %% change error-logger

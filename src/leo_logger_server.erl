@@ -259,7 +259,7 @@ append_sub(Log, #logger_state{appender_mod = Mod,
 
 %% @doc Append a message to LOG.
 %% @private
--spec(append_sub_1(atom(), string()|binary(), #logger_state{}) ->
+-spec(append_sub_1(atom(), #message_log{}, #logger_state{}) ->
              #logger_state{}).
 append_sub_1(undefined, _, State) ->
     State;
@@ -270,7 +270,7 @@ append_sub_1(Mod, LogMsg, State) ->
 %% @doc Output logs
 %% @private
 -spec(bulk_output_sub(list(any()), #logger_state{}) ->
-             ok | {error, any()}).
+             #logger_state{}).
 bulk_output_sub(Logs, #logger_state{appender_mod = Mod} = State) ->
     erlang:apply(Mod, bulk_output, [Logs, State]).
 

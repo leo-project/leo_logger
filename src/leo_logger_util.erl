@@ -37,7 +37,7 @@
 %%--------------------------------------------------------------------
 %% @doc create a logger proc.
 %%
--spec(new(atom(), log_appender(), list()) ->
+-spec(new(atom(), log_appender(), atom()) ->
              ok | {error, any()}).
 new(Id, Appender, Callback) ->
     new(Id, Appender, Callback, []).
@@ -47,12 +47,12 @@ new(Id, Appender, Callback, Props) ->
     start_child(Id, Appender, Callback, Props).
 
 
--spec(new(atom(), log_appender(), list(), string(), string()) ->
+-spec(new(atom(), log_appender(), atom(), string(), string()) ->
              ok | {error, any()}).
 new(Id, Appender, Callback, RootPath, FileName) ->
     new(Id, Appender, Callback, RootPath, FileName, 0).
 
--spec(new(atom(), log_appender(), list(), string(), string(), integer()) ->
+-spec(new(atom(), log_appender(), atom(), string(), string(), integer()) ->
              ok | {error, any()}).
 new(Id, Appender, Callback, RootPath, FileName, Level) ->
     io:format("id:~p, path:~p, filename:~p~n", [Id, RootPath, FileName]),
