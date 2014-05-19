@@ -62,7 +62,7 @@
                        appender_mod     :: atom(),
                        callback_mod     :: atom(),
                        props            :: list(),
-                       level = 0        :: pos_integer(),
+                       level = 0        :: non_neg_integer(),
                        hourstamp = -1   :: {integer(), integer(), integer(), integer()},
 
                        buffer = []      :: list(any()),
@@ -71,13 +71,13 @@
                        is_buf_output = false :: boolean()
                       }).
 
--record(message_log,  {level              :: atom(),
+-record(message_log,  {level              :: non_neg_integer(),
                        module = []        :: string(),
                        function = []      :: string(),
-                       line = 0           :: pos_integer(),
+                       line = 0           :: non_neg_integer(),
                        format  = []       :: string(),
                        message = []       :: list(),
-                       formatted_msg = [] :: list(),
+                       formatted_msg = [] :: string()|binary(),
                        esearch = []       :: list(tuple())
                       }).
 

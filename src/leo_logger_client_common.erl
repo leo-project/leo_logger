@@ -51,8 +51,8 @@ new(LogGroup, LogId, RootPath, LogFileName) ->
 
 %% @doc Initialize
 %%
--spec(init(atom(), list(atom()), list(any())) ->
-             ok).
+-spec(init(atom(), atom(), [_]) ->
+             ok | {error, _}).
 init(Appender, Callback, Props) ->
     leo_logger_appender_file:init(Appender, Callback, Props).
 
@@ -60,14 +60,14 @@ init(Appender, Callback, Props) ->
 %% @doc Format a log message
 %%
 -spec(format(atom(), #message_log{}) ->
-             ok).
+             string()).
 format(Appender, Log) ->
     leo_logger_appender_file:format(Appender, Log).
 
 
 %% @doc Append a message to a file
 %%
--spec(append(any()) ->
+-spec(append({atom(), #message_log{}}) ->
              ok).
 append({LogId, Log}) ->
     case whereis(LogId) of
@@ -77,16 +77,16 @@ append({LogId, Log}) ->
             leo_logger_server:append(?LOG_APPEND_SYNC, LogId, Log, 0)
     end.
 
--spec(append(list(), #logger_state{}) ->
-             ok).
-append(FormattedMsg, State) ->
-    leo_logger_appender_file:append(FormattedMsg, State).
+-spec(append(#message_log{}, #logger_state{}) ->
+             #logger_state{}).
+append(Log, State) ->
+    leo_logger_appender_file:append(Log, State).
 
 
 %% @doc Sync a log file
 %%
 -spec(sync(atom|#logger_state{}) ->
-             ok | {error, any()}).
+             ok | {error, _}).
 sync(LogId) when is_atom(LogId) ->
     leo_logger_server:sync(LogId);
 sync(State) when is_record(State, logger_state) ->
@@ -96,8 +96,8 @@ sync(_L) ->
 
 %% @doc Rotate a log
 %%
--spec(rotate(pos_integer(), #logger_state{}) ->
-             ok).
+-spec(rotate({integer(), integer(), integer(), integer()}, #logger_state{}) ->
+             {ok, #logger_state{}}).
 rotate(Hours, State) ->
     leo_logger_appender_file:rotate(Hours, State).
 
