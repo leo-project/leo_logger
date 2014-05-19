@@ -72,8 +72,8 @@
                       }).
 
 -record(message_log,  {level              :: non_neg_integer(),
-                       module = []        :: string(),
-                       function = []      :: string(),
+                       module = []        :: atom(),
+                       function = []      :: atom(),
                        line = 0           :: non_neg_integer(),
                        format  = []       :: string(),
                        message = []       :: list(),
