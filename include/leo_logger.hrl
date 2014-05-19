@@ -63,11 +63,11 @@
                        callback_mod     :: atom(),
                        props            :: list(),
                        level = 0        :: pos_integer(),
-                       hourstamp = -1   :: integer(),
+                       hourstamp = -1   :: {integer(), integer(), integer(), integer()},
 
                        buffer = []      :: list(any()),
-                       buf_duration = 0 :: pos_integer(),
-                       buf_begining = 0 :: pos_integer(),
+                       buf_duration = 0 :: non_neg_integer(),
+                       buf_begining = 0 :: non_neg_integer(),
                        is_buf_output = false :: boolean()
                       }).
 

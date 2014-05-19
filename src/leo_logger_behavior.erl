@@ -27,28 +27,17 @@
 
 -author('Yosuke Hara').
 
--export([behaviour_info/1]).
+-include("leo_logger.hrl").
 
-behaviour_info(callbacks) ->
-    [
-     %% init(atom(), list(), list() ->  {ok, #logger_state{}}.
-     {init, 3},
+-callback init(atom(), atom(), list()) -> {ok, #logger_state{}} | {error, _}.
 
-     %% append(list(), #logger_state{}) -> ok.
-     {append, 2},
+-callback append(#message_log{}, #logger_state{}) -> #logger_state{}.
 
-     %% bulk_output(list(), #logger_state{}) -> ok.
-     {bulk_output, 2},
+-callback bulk_output([_], #logger_state{}) -> #logger_state{}.
 
-     %% format(bulk|split, #logger_state{}) -> string()|binary().
-     {format, 2},
+-callback format(bulk|split, #message_log{}) -> string() | binary().
 
-     %% sync(#logger_state{}) -> ok.
-     {sync, 1},
+-callback sync(#logger_state{}) -> ok | {error, _}.
 
-     %% rotate(integer(), #logger_state{}) -> {ok, #logger_state{}}
-     {rotate, 2}
-    ];
-behaviour_info(_Other) ->
-    undefined.
+-callback rotate({integer(), integer(), integer(), integer()}, #logger_state{}) -> {ok, #logger_state{}}.
 
