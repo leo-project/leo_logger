@@ -47,7 +47,6 @@ setup() ->
     ok.
 
 teardown(_) ->
-    os:cmd("rm -rf " ++ ?TEST_LOG_DIR),
     application:stop(leo_logger),
     ok.
 

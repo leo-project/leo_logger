@@ -47,7 +47,6 @@ suite_test_() ->
              ok
      end,
      fun (_) ->
-             os:cmd("rm -rf " ++ ?TEST_LOG_DIR),
              application:stop(leo_logger),
              ok
      end,

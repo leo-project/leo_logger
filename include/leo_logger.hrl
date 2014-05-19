@@ -29,6 +29,11 @@
 -define(LOG_LEVEL_WARN,  2).
 -define(LOG_LEVEL_ERROR, 3).
 -define(LOG_LEVEL_FATAL, 4).
+-type(log_level() :: ?LOG_LEVEL_DEBUG |
+                     ?LOG_LEVEL_INFO  |
+                     ?LOG_LEVEL_WARN  |
+                     ?LOG_LEVEL_ERROR |
+                     ?LOG_LEVEL_FATAL).
 
 %% log-appender (for message-log)
 -define(LOG_APPENDER_FILE,    'file').
@@ -71,7 +76,7 @@
                        is_buf_output = false :: boolean()
                       }).
 
--record(message_log,  {level              :: non_neg_integer(),
+-record(message_log,  {level              :: log_level(),
                        module             :: atom(),
                        function           :: atom(),
                        line = 0           :: non_neg_integer(),
@@ -99,109 +104,52 @@
         end).
 
 
--define(log(Level, FuncName0, Format0, Message0),
-        case Level of
-            fatal   -> ?fatal(FuncName0, Format0, Message0);
-            error   -> ?error(FuncName0, Format0, Message0);
-            warning -> ?warn(FuncName0, Format0, Message0);
-            info    -> ?info(FuncName0, Format0, Message0);
-            debug   -> ?debug(FuncName0, Format0, Message0)
-        end).
-
--define(log(Level, ModuleString1, FuncName1, Line1, Format1, Message1),
-        %% Todo
-        case Message1 of
-            [] ->
-                case Level of
-                    fatal   -> ?fatal(ModuleString1, FuncName1, Line1, "~p", [Format1]);
-                    error   -> ?error(ModuleString1, FuncName1, Line1, "~p", [Format1]);
-                    warning -> ?warn(ModuleString1, FuncName1, Line1, "~p", [Format1]);
-                    info    -> ?info(ModuleString1, FuncName1, Line1, "~p", [Format1]);
-                    debug   -> ?debug(ModuleString1, FuncName1, Line1, "~p", [Format1])
-                end;
-            _ ->
-                case Level of
-                    fatal   -> ?fatal(ModuleString1, FuncName1, Line1, Format1, Message1);
-                    error   -> ?error(ModuleString1, FuncName1, Line1, Format1, Message1);
-                    warning -> ?warn(ModuleString1, FuncName1, Line1, Format1, Message1);
-                    info    -> ?info(ModuleString1, FuncName1, Line1, Format1, Message1);
-                    debug   -> ?debug(ModuleString1, FuncName1, Line1, Format1, Message1)
-                end
+-define(log(_ModLevel,_ModuleString,_FuncName,_Line,_Format,_Message),
+        begin
+            leo_logger_client_message:_ModLevel(#message_log{module   = _ModuleString,
+                                                             function = _FuncName,
+                                                             line     = _Line,
+                                                             format   = _Format,
+                                                             message  = _Message})
         end).
 
 
--define(fatal(FuncName, Format, Message),
+-define(fatal(_Func,_Format,_Message),
         leo_logger_client_message:fatal(#message_log{level    = ?LOG_LEVEL_FATAL,
                                                      module   = ?MODULE_STRING,
-                                                     function = FuncName,
+                                                     function = _Func,
                                                      line     = ?LINE,
-                                                     format   = Format,
-                                                     message  = Message})).
--define(fatal(ModuleString, FuncName, Line, Format, Message),
-        leo_logger_client_message:fatal(#message_log{level    = ?LOG_LEVEL_FATAL,
-                                                     module   = ModuleString,
-                                                     function = FuncName,
-                                                     line     = Line,
-                                                     format   = Format,
-                                                     message  = Message})).
+                                                     format   = _Format,
+                                                     message  = _Message})).
 
--define(error(FuncName, Format, Message),
+-define(error(_Func,_Format,_Message),
         leo_logger_client_message:error(#message_log{level    = ?LOG_LEVEL_ERROR,
                                                      module   = ?MODULE_STRING,
-                                                     function = FuncName,
+                                                     function = _Func,
                                                      line     = ?LINE,
-                                                     format   = Format,
-                                                     message  = Message})).
--define(error(ModuleString, FuncName, Line, Format, Message),
-        leo_logger_client_message:error(#message_log{level    = ?LOG_LEVEL_ERROR,
-                                                     module   = ModuleString,
-                                                     function = FuncName,
-                                                     line     = Line,
-                                                     format   = Format,
-                                                     message  = Message})).
+                                                     format   = _Format,
+                                                     message  = _Message})).
 
--define(warn(FuncName, Format, Message),
+-define(warn(_Func,_Format,_Message),
         leo_logger_client_message:warn(#message_log{level    = ?LOG_LEVEL_WARN,
                                                     module   = ?MODULE_STRING,
-                                                    function = FuncName,
+                                                    function = _Func,
                                                     line     = ?LINE,
-                                                    format   = Format,
-                                                    message  = Message})).
--define(warn(ModuleString, FuncName, Line, Format, Message),
-        leo_logger_client_message:warn(#message_log{level    = ?LOG_LEVEL_WARN,
-                                                    module   = ModuleString,
-                                                    function = FuncName,
-                                                    line     = Line,
-                                                    format   = Format,
-                                                    message  = Message})).
+                                                    format   = _Format,
+                                                    message  = _Message})).
 
--define(info(FuncName, Format, Message),
+-define(info(_Func,_Format,_Message),
         leo_logger_client_message:info(#message_log{level    = ?LOG_LEVEL_INFO,
                                                     module   = ?MODULE_STRING,
-                                                    function = FuncName,
+                                                    function = _Func,
                                                     line     = ?LINE,
-                                                    format   = Format,
-                                                    message  = Message})).
--define(info(ModuleString, FuncName, Line, Format, Message),
-        leo_logger_client_message:info(#message_log{level    = ?LOG_LEVEL_INFO,
-                                                    module   = ModuleString,
-                                                    function = FuncName,
-                                                    line     = Line,
-                                                    format   = Format,
-                                                    message  = Message})).
+                                                    format   = _Format,
+                                                    message  = _Message})).
 
--define(debug(FuncName, Format, Message),
+-define(debug(_Func,_Format,_Message),
         leo_logger_client_message:debug(#message_log{level    = ?LOG_LEVEL_DEBUG,
                                                      module   = ?MODULE_STRING,
-                                                     function = FuncName,
+                                                     function = _Func,
                                                      line     = ?LINE,
-                                                     format   = Format,
-                                                     message  = Message})).
--define(debug(ModuleString, FuncName, Line, Format, Message),
-        leo_logger_client_message:debug(#message_log{level    = ?LOG_LEVEL_DEBUG,
-                                                     module   = ModuleString,
-                                                     function = FuncName,
-                                                     line     = Line,
-                                                     format   = Format,
-                                                     message  = Message})).
-
+                                                     format   = _Format,
+                                                     message  = _Message})).

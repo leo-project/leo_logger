@@ -45,9 +45,14 @@
 %%--------------------------------------------------------------------
 %% Function: start_link() -> {ok,Pid} | ignore | {error,Error}
 %% Description: Starts the server
+-spec(start_link(atom(), atom(), atom(), [tuple()]) ->
+             {ok, pid()} | ignore | {error, any()}).
 start_link(Id, Appender, CallbackMod, Props) ->
     gen_server:start_link({local, Id}, ?MODULE, [Appender, CallbackMod, Props], []).
 
+
+-spec(stop(pid()) ->
+             ok).
 stop(Id) ->
     gen_server:call(Id, stop, 30000).
 

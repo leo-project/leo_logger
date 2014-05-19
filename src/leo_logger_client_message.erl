@@ -87,27 +87,27 @@ new(RootPath, Level, Loggers) ->
 %% @doc Output kind of 'Debug log'
 -spec(debug(any()) -> ok).
 debug(Log) ->
-    append(?LOG_GROUP_INFO, Log, 0).
+    append(?LOG_GROUP_INFO, Log, ?LOG_LEVEL_DEBUG).
 
 %% @doc Output kind of 'Information log'
 -spec(info(any()) -> ok).
 info(Log) ->
-    append(?LOG_GROUP_INFO, Log, 1).
+    append(?LOG_GROUP_INFO, Log, ?LOG_LEVEL_INFO).
 
 %% @doc Output kind of 'Warning log'
 -spec(warn(any()) -> ok).
 warn(Log) ->
-    append(?LOG_GROUP_ERROR, Log, 2).
+    append(?LOG_GROUP_ERROR, Log, ?LOG_LEVEL_WARN).
 
 %% @doc Output kind of 'Error log'
 -spec(error(any()) -> ok).
 error(Log) ->
-    append(?LOG_GROUP_ERROR, Log, 3).
+    append(?LOG_GROUP_ERROR, Log, ?LOG_LEVEL_ERROR).
 
 %% @doc Output kind of 'Fatal log'
 -spec(fatal(any()) -> ok).
 fatal(Log) ->
-    append(?LOG_GROUP_ERROR, Log, 4).
+    append(?LOG_GROUP_ERROR, Log, ?LOG_LEVEL_FATAL).
 
 
 %% @doc Format a log message
@@ -160,15 +160,18 @@ append(GroupId, Log, Level) ->
     case catch ets:lookup(?ETS_LOGGER_GROUP, GroupId) of
         {'EXIT', Cause} ->
             error_logger:error_msg("~p,~p,~p,~p~n",
-                                   [{module, ?MODULE_STRING}, {function, "append/3"},
+                                   [{module, ?MODULE_STRING},
+                                    {function, "append/3"},
                                     {line, ?LINE}, {body, Cause}]),
             {error, Cause};
         [] ->
             {error, not_found};
         List ->
+            Log_1 = Log#message_log{level = Level},
             lists:foreach(
               fun({_, AppenderId}) ->
-                      leo_logger_server:append(?LOG_APPEND_SYNC, AppenderId, Log, Level)
+                      leo_logger_server:append(
+                        ?LOG_APPEND_SYNC, AppenderId, Log_1, Level)
               end, List)
     end.
 
