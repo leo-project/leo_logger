@@ -37,23 +37,25 @@
 %%--------------------------------------------------------------------
 %% @doc create a logger proc.
 %%
--spec(new(atom(), log_appender(), atom()) ->
-             ok | {error, any()}).
+-spec new(atom(), log_appender(), atom()) ->
+             ok | {error, any()}.
 new(Id, Appender, Callback) ->
     new(Id, Appender, Callback, []).
 
+-spec new(atom(), log_appender(), atom(), [_]) ->
+             ok | {error, any()}.
 new(Id, Appender, Callback, Props) ->
     ok = start_app(),
     start_child(Id, Appender, Callback, Props).
 
 
--spec(new(atom(), log_appender(), atom(), string(), string()) ->
-             ok | {error, any()}).
+-spec new(atom(), log_appender(), atom(), string(), string()) ->
+             ok | {error, any()}.
 new(Id, Appender, Callback, RootPath, FileName) ->
     new(Id, Appender, Callback, RootPath, FileName, 0).
 
--spec(new(atom(), log_appender(), atom(), string(), string(), integer()) ->
-             ok | {error, any()}).
+-spec new(atom(), log_appender(), atom(), string(), string(), integer()) ->
+             ok | {error, any()}.
 new(Id, Appender, Callback, RootPath, FileName, Level) ->
     io:format("id:~p, path:~p, filename:~p~n", [Id, RootPath, FileName]),
     ok = start_app(),
@@ -67,8 +69,8 @@ new(Id, Appender, Callback, RootPath, FileName, Level) ->
 
 %% @doc add an appender into the ets
 %%
--spec(add_appender(atom(), atom()) ->
-             ok).
+-spec add_appender(atom(), atom()) ->
+             ok.
 add_appender(GroupId, LoggerId) ->
     catch ets:insert(?ETS_LOGGER_GROUP, {GroupId, LoggerId}),
     ok.
@@ -79,8 +81,8 @@ add_appender(GroupId, LoggerId) ->
 %%--------------------------------------------------------------------
 %% @doc Start object storage application.
 %%
--spec(start_app() ->
-             ok | {error, any()}).
+-spec start_app() ->
+             ok | {error, any()}.
 start_app() ->
     Module = leo_logger,
     case application:start(Module) of
@@ -97,8 +99,8 @@ start_app() ->
 
 %% @doc Launch a child worker
 %% @private
--spec(start_child(atom(), log_appender(), atom(), list()) ->
-             ok | {error, any()}).
+-spec start_child(atom(), log_appender(), atom(), [_]) ->
+             ok | {error, any()}.
 start_child(Id, Appender, Callback, Props) ->
     ChildSpec = {Id,
                  {leo_logger_server, start_link,
@@ -114,6 +116,8 @@ start_child(Id, Appender, Callback, Props) ->
     end.
 
 %% @private
+-spec start_child_1(atom()) ->
+     'ok' | {'error',_} | {'ok','undefined' | pid(),_}.
 start_child_1(Id)->
     RotatorId = list_to_atom(lists:append([atom_to_list(Id),"_rotator"])),
     ChildSpec = {RotatorId,

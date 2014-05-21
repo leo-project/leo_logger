@@ -41,17 +41,17 @@
 %%-----------------------------------------------------------------------
 %% External API
 %%-----------------------------------------------------------------------
-%% @spec () -> ok
 %% @doc start link.
 %% @end
+-spec start_link() ->
+      {'ok', pid()} | 'ignore' | {'error',_}.
 start_link() ->
     supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
 
-%% @spec () -> ok |
-%%             not_started
 %% @doc stop process.
 %% @end
+-spec stop() -> 'ok' | 'not_started'.
 stop() ->
     case whereis(?MODULE) of
         Pid when is_pid(Pid) == true ->
@@ -64,7 +64,6 @@ stop() ->
 %% ---------------------------------------------------------------------
 %% Callbacks
 %% ---------------------------------------------------------------------
-%% @spec (Params) -> ok
 %% @doc stop process.
 %% @end
 %% @private
