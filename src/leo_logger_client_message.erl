@@ -174,7 +174,7 @@ append(GroupId, Log, Level) ->
 
 %% @doc Set log-level
 %% @private
--spec log_level('undefined' | 0 | 1 | 2 | 3 | 4) -> string().
+-spec log_level('undefined' | log_level()) -> string().
 log_level(?LOG_LEVEL_DEBUG) -> "D";
 log_level(?LOG_LEVEL_INFO)  -> "I";
 log_level(?LOG_LEVEL_WARN)  -> "W";
