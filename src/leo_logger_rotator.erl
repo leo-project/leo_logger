@@ -51,12 +51,18 @@
 %%--------------------------------------------------------------------
 %% Function: start_link() -> {ok,Pid} | ignore | {error,Error}
 %% Description: Starts the server
+-spec(start_link(atom(), atom()) ->
+             {ok, pid()} | ignore | {error, any()}).
 start_link(ServerId, Mod) ->
     gen_server:start_link(?MODULE, [ServerId, Mod, ?DEF_ROTATION_INTERVAL], []).
 
+-spec(start_link(atom(), atom(), pos_integer()) ->
+             {ok, pid()} | ignore | {error, any()}).
 start_link(ServerId, Mod, RotationInterval) ->
     gen_server:start_link(?MODULE, [ServerId, Mod, RotationInterval], []).
 
+-spec(stop(pid()) ->
+             ok).
 stop(Pid) ->
     gen_server:cast(Pid, stop).
 

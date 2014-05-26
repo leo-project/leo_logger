@@ -53,34 +53,6 @@
             end
         end).
 
--ifdef(TEST).
-%% Make CRASH synchronous when testing, to avoid timing headaches
--define(CRASH_LOG(Event),
-        begin
-            ?debugVal(Event),
-            ok
-        end).
-%% catch(gen_server:call(lager_crash_log, {log, Event}))).
--else.
--define(CRASH_LOG(Event),
-        begin
-            case Event of
-                {_, _Pid1, {_Pid2, Msg, []}} ->
-                    ?error(null, null, 0, "~p", [Msg]);
-                {_, _Pid1, {_Pid2, _, List}} ->
-                    case can_output_custom_format(List) of
-                        {true, #message_item{module = Mod,
-                                             function = Fun,
-                                             line = Line,
-                                             body = Body}} ->
-                            ?error(Mod, Fun, Line, "~p", [Body]);
-                        {false, _} ->
-                            ?error(null, null, 0, "~p", [List])
-                    end
-            end
-        end).
-%% gen_server:cast(lager_crash_log, {log, Event})).
--endif.
 
 -spec init(any()) -> {ok, {}}.
 init(_) ->
@@ -96,30 +68,25 @@ handle_event(Event, State) ->
                 "** Generic server "++_ ->
                     %% gen_server terminate
                     [Name, _Msg, _State, Reason] = Args,
-                    ?CRASH_LOG(Event),
-                    ?LOG(error, _Pid, "gen_server ~w terminated with reason: ~s",
+                    ?LOG('error', _Pid, "gen_server ~w terminated with reason: ~s",
                          [Name, format_reason(Reason)]);
                 "** State machine "++_ ->
                     %% gen_fsm terminate
                     [Name, _Msg, StateName, _StateData, Reason] = Args,
-                    ?CRASH_LOG(Event),
                     ?LOG(error, _Pid, "gen_fsm ~w in state ~w terminated with reason: ~s",
                          [Name, StateName, format_reason(Reason)]);
                 "** gen_event handler"++_ ->
                     %% gen_event handler terminate
                     [ID, Name, _Msg, _State, Reason] = Args,
-                    ?CRASH_LOG(Event),
                     ?LOG(error, _Pid, "gen_event ~w installed in ~w terminated with reason: ~s",
                          [ID, Name, format_reason(Reason)]);
                 _ ->
-                    ?CRASH_LOG(Event)
                     %% ?LOG(error, _Pid, safe_format(Fmt, Args, 4096))
+                    ok
             end;
         {error_report, _GL, {__Pid, std_error, D}} ->
-            ?CRASH_LOG(Event),
             ?LOG(error, __Pid, print_silly_list(D));
         {error_report, _GL, {_Pid, supervisor_report, D}} ->
-            ?CRASH_LOG(Event),
             case lists:sort(D) of
                 [{errorContext, Ctx}, {offender, Off}, {reason, Reason}, {supervisor, Name}] ->
                     Offender = format_offender(Off),
@@ -130,13 +97,12 @@ handle_event(Event, State) ->
                     ?LOG(error, _Pid, ["SUPERVISOR REPORT ", print_silly_list(D)])
             end;
         {error_report, _GL, {_Pid, crash_report, [Self, Neighbours]}} ->
-            ?CRASH_LOG(Event),
             ?LOG(error, _Pid, ["CRASH REPORT ", format_crash_report(Self, Neighbours)]);
         {warning_msg, _GL, {_Pid, Fmt, Args}} ->
-            ?LOG(warning, _Pid, Fmt, Args);
-        %% ?LOG(warning, _Pid, safe_format(Fmt, Args, 4096));
+            ?LOG(warn, _Pid, Fmt, Args);
+        %% ?LOG(warn, _Pid, safe_format(Fmt, Args, 4096));
         {warning_report, _GL, {_Pid, std_warning, Report}} ->
-            ?LOG(warning, _Pid, print_silly_list(Report));
+            ?LOG(warn, _Pid, print_silly_list(Report));
         {info_msg, _GL, {_Pid, Fmt, Args}} ->
             ?LOG(info, _Pid, Fmt, Args);
         %% ?LOG(info, _Pid, safe_format(Fmt, Args, 4096));
@@ -166,7 +132,7 @@ handle_event(Event, State) ->
                     ?LOG(info, P, ["PROGRESS REPORT ", print_silly_list(D)])
             end;
         _ ->
-            ?LOG(warning, self(), "Unexpected error_logger event ~w", [Event])
+            ?LOG(warn, self(), "Unexpected error_logger event ~w", [Event])
     end,
     {ok, State}.
 

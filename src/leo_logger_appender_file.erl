@@ -41,8 +41,8 @@
 %%--------------------------------------------------------------------
 %% @doc Initialize this logger
 %%
--spec(init(atom(), list(), list()) ->
-             {ok, #logger_state{}}).
+-spec(init(atom(), atom(), list()) ->
+             {ok, #logger_state{}} | {error, _}).
 init(Appender, CallbackMod, Props) ->
     RootPath = leo_misc:get_value(?FILE_PROP_ROOT_PATH, Props),
     FileName = leo_misc:get_value(?FILE_PROP_FILE_NAME, Props),
@@ -82,7 +82,7 @@ init(Appender, CallbackMod, Props) ->
 
 %% @doc Append a message to a file
 %%
--spec(append(list(), #logger_state{}) ->
+-spec(append(#message_log{}, #logger_state{}) ->
              #logger_state{}).
 append(#message_log{formatted_msg = FormattedMsg}, State) ->
     Handler = leo_misc:get_value(?FILE_PROP_HANDLER, State#logger_state.props),
@@ -92,25 +92,16 @@ append(#message_log{formatted_msg = FormattedMsg}, State) ->
 
 %% @doc Output messages
 %%
--spec(bulk_output(list(), #logger_state{}) ->
+-spec(bulk_output([_], #logger_state{}) ->
              #logger_state{}).
 bulk_output(_Logs, State) ->
     State.
 
 
-%% @doc Sync a file
-%%
--spec(sync(#logger_state{}) ->
-             ok | {error, any()}).
-sync(State) ->
-    Handler = leo_misc:get_value(?FILE_PROP_HANDLER, State#logger_state.props),
-    file:datasync(Handler).
-
-
 %% @doc Format a log message
 %%
 -spec(format(split|bulk, #message_log{}) ->
-             list()).
+             string()).
 format(_Type, #message_log{format  = Format,
                            message = Message}) ->
     case catch io_lib:format(Format, Message) of
@@ -121,9 +112,18 @@ format(_Type, #message_log{format  = Format,
     end.
 
 
+%% @doc Sync a file
+%%
+-spec(sync(#logger_state{}) ->
+             ok | {error, _}).
+sync(State) ->
+    Handler = leo_misc:get_value(?FILE_PROP_HANDLER, State#logger_state.props),
+    file:datasync(Handler).
+
+
 %% @doc Rotate a log file
 %%
--spec(rotate(integer(), #logger_state{}) ->
+-spec(rotate({integer(), integer(), integer(), integer()}, #logger_state{}) ->
              {ok, #logger_state{}}).
 rotate(Hours, #logger_state{props = Props} = State) ->
     BaseFileName    = leo_misc:get_value(?FILE_PROP_FILE_NAME, Props),

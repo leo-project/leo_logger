@@ -45,14 +45,12 @@
 %%--------------------------------------------------------------------
 %% @doc Create loggers for message logs
 %%
--spec(new(string(), integer()) ->
-             ok).
+-spec new(string(), integer()) -> ok.
 new(RootPath, Level) ->
     new(RootPath, Level, [{?LOG_ID_FILE_INFO,  ?LOG_APPENDER_FILE},
                           {?LOG_ID_FILE_ERROR, ?LOG_APPENDER_FILE}]).
 
--spec(new(list(), string(), integer()) ->
-             ok).
+-spec new(string(), integer(), [{atom(), log_appender()}]) -> ok.
 new(RootPath, Level, Loggers) ->
     %% change error-logger
     case gen_event:which_handlers(error_logger) of
@@ -85,35 +83,34 @@ new(RootPath, Level, Loggers) ->
 
 
 %% @doc Output kind of 'Debug log'
--spec(debug(any()) -> ok).
+-spec debug(#message_log{}) -> ok.
 debug(Log) ->
-    append(?LOG_GROUP_INFO, Log, 0).
+    append(?LOG_GROUP_INFO, Log, ?LOG_LEVEL_DEBUG).
 
 %% @doc Output kind of 'Information log'
--spec(info(any()) -> ok).
+-spec(info(#message_log{}) -> ok).
 info(Log) ->
-    append(?LOG_GROUP_INFO, Log, 1).
+    append(?LOG_GROUP_INFO, Log, ?LOG_LEVEL_INFO).
 
 %% @doc Output kind of 'Warning log'
--spec(warn(any()) -> ok).
+-spec(warn(#message_log{}) -> ok).
 warn(Log) ->
-    append(?LOG_GROUP_ERROR, Log, 2).
+    append(?LOG_GROUP_ERROR, Log, ?LOG_LEVEL_WARN).
 
 %% @doc Output kind of 'Error log'
--spec(error(any()) -> ok).
+-spec(error(#message_log{}) -> ok).
 error(Log) ->
-    append(?LOG_GROUP_ERROR, Log, 3).
+    append(?LOG_GROUP_ERROR, Log, ?LOG_LEVEL_ERROR).
 
 %% @doc Output kind of 'Fatal log'
--spec(fatal(any()) -> ok).
+-spec(fatal(#message_log{}) -> ok).
 fatal(Log) ->
-    append(?LOG_GROUP_ERROR, Log, 4).
+    append(?LOG_GROUP_ERROR, Log, ?LOG_LEVEL_FATAL).
 
 
 %% @doc Format a log message
 %%
--spec(format(atom(), #message_log{}) ->
-             string()).
+-spec(format(atom(), #message_log{}) -> string()).
 format(_Type, Log) ->
     #message_log{format  = Format,
                  message = Message} = Log,
@@ -154,27 +151,30 @@ format_1(#message_log{level    = Level,
 %%--------------------------------------------------------------------
 %% @doc append a log.
 %% @private
--spec(append(atom(), any(), integer()) ->
-             ok).
+-spec(append(atom(), #message_log{}, integer()) -> ok).
 append(GroupId, Log, Level) ->
     case catch ets:lookup(?ETS_LOGGER_GROUP, GroupId) of
         {'EXIT', Cause} ->
             error_logger:error_msg("~p,~p,~p,~p~n",
-                                   [{module, ?MODULE_STRING}, {function, "append/3"},
+                                   [{module, ?MODULE_STRING},
+                                    {function, "append/3"},
                                     {line, ?LINE}, {body, Cause}]),
             {error, Cause};
         [] ->
             {error, not_found};
         List ->
+            Log_1 = Log#message_log{level = Level},
             lists:foreach(
               fun({_, AppenderId}) ->
-                      leo_logger_server:append(?LOG_APPEND_SYNC, AppenderId, Log, Level)
+                      leo_logger_server:append(
+                        ?LOG_APPEND_SYNC, AppenderId, Log_1, Level)
               end, List)
     end.
 
 
 %% @doc Set log-level
 %% @private
+-spec log_level('undefined' | log_level()) -> string().
 log_level(?LOG_LEVEL_DEBUG) -> "D";
 log_level(?LOG_LEVEL_INFO)  -> "I";
 log_level(?LOG_LEVEL_WARN)  -> "W";
@@ -185,6 +185,7 @@ log_level(_)                -> "_".
 
 %% @doc get unix-time
 %% @private
+-spec unixtime() -> integer().
 unixtime() ->
     {H,S,_} = os:timestamp(),
     list_to_integer(integer_to_list(H) ++ integer_to_list(S)).

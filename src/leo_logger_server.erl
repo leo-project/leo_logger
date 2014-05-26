@@ -45,9 +45,14 @@
 %%--------------------------------------------------------------------
 %% Function: start_link() -> {ok,Pid} | ignore | {error,Error}
 %% Description: Starts the server
+-spec(start_link(atom(), atom(), atom(), [tuple()]) ->
+             {ok, pid()} | ignore | {error, any()}).
 start_link(Id, Appender, CallbackMod, Props) ->
     gen_server:start_link({local, Id}, ?MODULE, [Appender, CallbackMod, Props], []).
 
+
+-spec(stop(pid()) ->
+             ok).
 stop(Id) ->
     gen_server:call(Id, stop, 30000).
 
@@ -259,7 +264,7 @@ append_sub(Log, #logger_state{appender_mod = Mod,
 
 %% @doc Append a message to LOG.
 %% @private
--spec(append_sub_1(atom(), string()|binary(), #logger_state{}) ->
+-spec(append_sub_1(atom(), #message_log{}, #logger_state{}) ->
              #logger_state{}).
 append_sub_1(undefined, _, State) ->
     State;
@@ -270,7 +275,7 @@ append_sub_1(Mod, LogMsg, State) ->
 %% @doc Output logs
 %% @private
 -spec(bulk_output_sub(list(any()), #logger_state{}) ->
-             ok | {error, any()}).
+             #logger_state{}).
 bulk_output_sub(Logs, #logger_state{appender_mod = Mod} = State) ->
     erlang:apply(Mod, bulk_output, [Logs, State]).
 
