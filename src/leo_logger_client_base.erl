@@ -23,7 +23,7 @@
 %% @doc
 %% @end
 %%======================================================================
--module(leo_logger_client_common).
+-module(leo_logger_client_base).
 
 -author('Yosuke Hara').
 
