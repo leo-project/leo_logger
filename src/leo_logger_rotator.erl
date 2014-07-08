@@ -39,7 +39,7 @@
 -ifdef(TEST).
 -define(DEF_ROTATION_INTERVAL, timer:seconds(10)).
 -else.
--define(DEF_ROTATION_INTERVAL, timer:minutes(10)).
+-define(DEF_ROTATION_INTERVAL, timer:minutes(1)).
 -endif.
 
 -record(state, {id  :: atom(),
