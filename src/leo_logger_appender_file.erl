@@ -64,7 +64,6 @@ init(Appender, CallbackMod, Props) ->
                       true  -> string:substr(BasePath1, 1, BasePathLen-1);
                       false -> BasePath1
                   end,
-
     case catch open(BasePath2, DateHour) of
         {'EXIT', Cause} ->
             {error, Cause};
@@ -132,9 +131,9 @@ rotate(Hours, #logger_state{props = Props} = State) ->
 
     ok = close(CurrentFileName, Handler),
     {NewLogFileName, NewHandler} = open(BaseFileName, Hours),
-    {ok, State#logger_state{props    = [{?FILE_PROP_FILE_NAME, BaseFileName},
-                                        {?FILE_PROP_CUR_NAME,  NewLogFileName},
-                                        {?FILE_PROP_HANDLER,   NewHandler}],
+    {ok, State#logger_state{props = [{?FILE_PROP_FILE_NAME, BaseFileName},
+                                     {?FILE_PROP_CUR_NAME,  NewLogFileName},
+                                     {?FILE_PROP_HANDLER,   NewHandler}],
                             hourstamp = Hours}}.
 
 
