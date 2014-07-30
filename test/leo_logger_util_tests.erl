@@ -72,7 +72,7 @@ append() ->
 message() ->
     ok = leo_logger_client_message:new(?TEST_LOG_DIR, 0),
     inspect(),
-    append_messages(1000),
+    append_messages(100),
     ok.
 
 
@@ -100,6 +100,15 @@ inspect() ->
                      {shell,eval_exprs,7,[{file,"shell.erl"},{line,623}]},
                      {shell,eval_loop,3,[{file,"shell.erl"},{line,608}]}]},
     ?error("test_log", "~p", [Error]),
+
+    error_logger:error_msg("~p,~p,~p,~p~n",
+                           [{module, ?MODULE_STRING}, {function, "inspect/0"},
+                            {line, ?LINE},
+                            {body, "TEST-1"}]),
+    error_logger:info_msg("~p,~p,~p,~p~n",
+                          [{module, ?MODULE_STRING}, {function, "inspect/0"},
+                            {line, ?LINE},
+                           {body, "TEST-2"}]),
 
     Res0 = os:cmd("ls " ++ ?TEST_LOG_DIR),
     Res1 = string:tokens(Res0, " \n"),
