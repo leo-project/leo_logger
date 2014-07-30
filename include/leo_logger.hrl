@@ -77,11 +77,11 @@
                       }).
 
 -record(message_log,  {level              :: log_level(),
-                       module             :: atom(),
-                       function           :: atom(),
+                       module             :: string()|atom(),
+                       function           :: string()|atom(),
                        line = 0           :: non_neg_integer(),
                        format  = []       :: string(),
-                       message = []       :: list(),
+                       message = []       :: [any()],
                        formatted_msg = [] :: string()|binary(),
                        esearch = []       :: list(tuple())
                       }).

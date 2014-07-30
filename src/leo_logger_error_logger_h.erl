@@ -82,7 +82,7 @@ handle_event(Event, State) ->
                          [ID, Name, format_reason(Reason)]);
                 _ ->
                     %% ?LOG(error, _Pid, safe_format(Fmt, Args, 4096))
-                    ok
+                    ?LOG(error, _Pid, Fmt, Args)
             end;
         {error_report, _GL, {__Pid, std_error, D}} ->
             ?LOG(error, __Pid, print_silly_list(D));
