@@ -18,9 +18,8 @@
 %% specific language governing permissions and limitations
 %% under the License.
 %%
-%% ---------------------------------------------------------------------
-%% Leo Logger - API
-%% @doc
+%% @doc The log utils
+%% @reference [https://github.com/leo-project/leo_logger/blob/master/src/leo_logger_util.erl]
 %% @end
 %%======================================================================
 -module(leo_logger_util).
@@ -37,25 +36,38 @@
 %%--------------------------------------------------------------------
 %% @doc create a logger proc.
 %%
--spec(new(atom(), log_appender(), atom()) ->
-             ok | {error, any()}).
+-spec(new(Id, Appender, Callback) ->
+             ok | {error, any()} when Id::atom(),
+                                      Appender::log_appender(),
+                                      Callback::module()).
 new(Id, Appender, Callback) ->
     new(Id, Appender, Callback, []).
 
--spec(new(atom(), log_appender(), atom(), [_]) ->
-             ok | {error, any()}).
+-spec(new(Id, Appender, Callback, Props) ->
+             ok | {error, any()} when Id::atom(),
+                                      Appender::log_appender(),
+                                      Callback::module(),
+                                      Props::[{atom(), any()}]).
 new(Id, Appender, Callback, Props) ->
     ok = start_app(),
     start_child(Id, Appender, Callback, Props).
 
-
--spec(new(atom(), log_appender(), atom(), string(), string()) ->
-             ok | {error, any()}).
+-spec(new(Id, Appender, Callback, RootPath, FileName) ->
+             ok | {error, any()} when Id::atom(),
+                                      Appender::log_appender(),
+                                      Callback::module(),
+                                      RootPath::string(),
+                                      FileName::string()).
 new(Id, Appender, Callback, RootPath, FileName) ->
     new(Id, Appender, Callback, RootPath, FileName, 0).
 
--spec(new(atom(), log_appender(), atom(), string(), string(), integer()) ->
-             ok | {error, any()}).
+-spec(new(Id, Appender, Callback, RootPath, FileName, Level) ->
+             ok | {error, any()} when Id::atom(),
+                                      Appender::log_appender(),
+                                      Callback::module(),
+                                      RootPath::string(),
+                                      FileName::string(),
+                                      Level::non_neg_integer()).
 new(Id, Appender, Callback, RootPath, FileName, Level) ->
     io:format("id:~p, path:~p, filename:~p~n", [Id, RootPath, FileName]),
     ok = start_app(),
@@ -69,8 +81,9 @@ new(Id, Appender, Callback, RootPath, FileName, Level) ->
 
 %% @doc add an appender into the ets
 %%
--spec(add_appender(atom(), atom()) ->
-             ok).
+-spec(add_appender(GroupId, LoggerId) ->
+             ok when GroupId::atom(),
+                     LoggerId::atom()).
 add_appender(GroupId, LoggerId) ->
     catch ets:insert(?ETS_LOGGER_GROUP, {GroupId, LoggerId}),
     ok.
@@ -109,8 +122,11 @@ start_app() ->
 
 %% @doc Launch a child worker
 %% @private
--spec(start_child(atom(), log_appender(), atom(), [_]) ->
-             ok | {error, any()}).
+-spec(start_child(Id, Appender, Callback, Props) ->
+             ok | {error, any()} when Id::atom(),
+                                      Appender::log_appender(),
+                                      Callback::module(),
+                                      Props::[{atom(), any()}]).
 start_child(Id, Appender, Callback, Props) ->
     ChildSpec = {Id,
                  {leo_logger_server, start_link,
@@ -126,10 +142,10 @@ start_child(Id, Appender, Callback, Props) ->
     end.
 
 %% @private
--spec(start_child_1(atom()) ->
-             'ok' |
-             {'error',_} |
-             {'ok','undefined' | pid(),_}).
+-spec(start_child_1(Id) ->
+             ok |
+             {error, _} |
+             {ok, undefined | pid(), _} when Id::atom()).
 start_child_1(Id)->
     RotatorId = list_to_atom(lists:append([atom_to_list(Id),"_rotator"])),
     ChildSpec = {RotatorId,

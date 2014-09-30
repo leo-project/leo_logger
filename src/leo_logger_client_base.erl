@@ -18,9 +18,8 @@
 %% specific language governing permissions and limitations
 %% under the License.
 %%
-%% ---------------------------------------------------------------------
-%% Leo Logger - Client (access-log)
-%% @doc
+%% @doc The base of logger client
+%% @reference [https://github.com/leo-project/leo_logger/blob/master/src/leo_logger_client_base.erl]
 %% @end
 %%======================================================================
 -module(leo_logger_client_base).
@@ -32,15 +31,17 @@
 
 -export([new/4, format/2, append/1, sync/1]).
 
--define(MAX_MSG_BODY_LEN, 4096).
 
 %%--------------------------------------------------------------------
 %% API
 %%--------------------------------------------------------------------
 %% @doc Create loggers for message logs
 %%
--spec new(atom(), atom(), string(), string()) ->
-             ok.
+-spec(new(LogGroup, LogId, RootPath, LogFileName) ->
+             ok when LogGroup::atom(),
+                     LogId::atom(),
+                     RootPath::string(),
+                     LogFileName::string()).
 new(LogGroup, LogId, RootPath, LogFileName) ->
     AppenderMod = leo_logger_appender_file,
     ok = leo_logger_util:new(
@@ -51,16 +52,17 @@ new(LogGroup, LogId, RootPath, LogFileName) ->
 
 %% @doc Format a log message
 %%
--spec format(atom(), #message_log{}) ->
-             string().
+-spec(format(Appender, Log) ->
+             string() when Appender::atom(),
+                           Log::#message_log{}).
 format(Appender, Log) ->
     leo_logger_appender_file:format(Appender, Log).
 
 
 %% @doc Append a message to a file
 %%
--spec append({atom(), #message_log{}}) ->
-             ok.
+-spec(append(LogInfo) ->
+             ok when LogInfo::{atom(), #message_log{}}).
 append({LogId, Log}) ->
     case whereis(LogId) of
         undefined ->
@@ -72,8 +74,8 @@ append({LogId, Log}) ->
 
 %% @doc Sync a log file
 %%
--spec sync(atom|#logger_state{}) ->
-             ok | {error, _}.
+-spec(sync(LogId) ->
+             ok | {error, _} when LogId::atom|#logger_state{}).
 sync(LogId) when is_atom(LogId) ->
     leo_logger_server:sync(LogId);
 sync(_L) ->

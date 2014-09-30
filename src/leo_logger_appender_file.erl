@@ -18,9 +18,8 @@
 %% specific language governing permissions and limitations
 %% under the License.
 %%
-%% ---------------------------------------------------------------------
-%% Leo Logger - File Appender
-%% @doc
+%% @doc The file appender
+%% @reference [https://github.com/leo-project/leo_logger/blob/master/src/leo_logger_appender_file.erl]
 %% @end
 %%======================================================================
 -module(leo_logger_appender_file).
@@ -39,10 +38,12 @@
 %%--------------------------------------------------------------------
 %% API
 %%--------------------------------------------------------------------
-%% @doc Initialize this logger
+%% @doc Initialize the logger
 %%
--spec(init(atom(), atom(), list()) ->
-             {ok, #logger_state{}} | {error, _}).
+-spec(init(Appender, CallbackMod, Props) ->
+             {ok, #logger_state{}} | {error, _} when Appender::atom(),
+                                                     CallbackMod::module(),
+                                                     Props::[{atom(), any()}]).
 init(Appender, CallbackMod, Props) ->
     RootPath = leo_misc:get_value(?FILE_PROP_ROOT_PATH, Props),
     FileName = leo_misc:get_value(?FILE_PROP_FILE_NAME, Props),
@@ -58,7 +59,7 @@ init(Appender, CallbackMod, Props) ->
                     "../" ++ _Rest -> BasePath;
                     "./"  ++  Rest -> Curr ++ "/" ++ Rest;
                     _              -> Curr ++ "/" ++ BasePath
-            end,
+                end,
     BasePathLen = string:len(BasePath1),
     BasePath2   = case (BasePathLen == string:rstr(BasePath1, "/")) of
                       true  -> string:substr(BasePath1, 1, BasePathLen-1);
@@ -81,8 +82,9 @@ init(Appender, CallbackMod, Props) ->
 
 %% @doc Append a message to a file
 %%
--spec(append(#message_log{}, #logger_state{}) ->
-             #logger_state{}).
+-spec(append(Msg, State) ->
+             #logger_state{} when Msg::#message_log{},
+                                  State::#logger_state{}).
 append(#message_log{formatted_msg = FormattedMsg}, State) ->
     Handler = leo_misc:get_value(?FILE_PROP_HANDLER, State#logger_state.props),
     catch file:write(Handler, lists:flatten(FormattedMsg)),
@@ -91,16 +93,19 @@ append(#message_log{formatted_msg = FormattedMsg}, State) ->
 
 %% @doc Output messages
 %%
--spec(bulk_output([_], #logger_state{}) ->
-             #logger_state{}).
+-spec(bulk_output(Logs, State) ->
+             #logger_state{} when Logs::[_],
+                                  State::#logger_state{}).
 bulk_output(_Logs, State) ->
     State.
 
 
 %% @doc Format a log message
 %%
--spec(format(split|bulk, #message_log{}) ->
-             string()).
+-spec(format(Type, Msg) ->
+             Ret when Type::split|bulk,
+                      Msg::#message_log{},
+                      Ret::string()).
 format(_Type, #message_log{format  = Format,
                            message = Message}) ->
     case catch io_lib:format(Format, Message) of
@@ -111,19 +116,20 @@ format(_Type, #message_log{format  = Format,
     end.
 
 
-%% @doc Sync a file
+%% @doc Synchronize the file
 %%
--spec(sync(#logger_state{}) ->
-             ok | {error, _}).
+-spec(sync(State) ->
+             ok | {error, _} when State::#logger_state{}).
 sync(State) ->
     Handler = leo_misc:get_value(?FILE_PROP_HANDLER, State#logger_state.props),
     file:datasync(Handler).
 
 
-%% @doc Rotate a log file
+%% @doc Rotate the log file
 %%
--spec(rotate({integer(), integer(), integer(), integer()}, #logger_state{}) ->
-             {ok, #logger_state{}}).
+-spec(rotate(Hours, State) ->
+             {ok, #logger_state{}} when Hours::{integer(), integer(), integer(), integer()},
+                                        State::#logger_state{}).
 rotate(Hours, #logger_state{props = Props} = State) ->
     BaseFileName    = leo_misc:get_value(?FILE_PROP_FILE_NAME, Props),
     CurrentFileName = leo_misc:get_value(?FILE_PROP_CUR_NAME,  Props),
@@ -137,9 +143,9 @@ rotate(Hours, #logger_state{props = Props} = State) ->
                             hourstamp = Hours}}.
 
 
-%% @doc Close a log file
--spec(close(#logger_state{}) ->
-             ok | {error, any()}).
+%% @doc Close the log file
+-spec(close(State) ->
+             ok | {error, any()} when State::#logger_state{}).
 close(#logger_state{props = Props} = _State) ->
     CurrentFileName = leo_misc:get_value(?FILE_PROP_CUR_NAME, Props),
     Handler         = leo_misc:get_value(?FILE_PROP_HANDLER,  Props),
@@ -216,4 +222,3 @@ suffix({Y, M, D, H}) ->
     DS = zeropad(D, 2),
     HS = zeropad(H, 2),
     lists:flatten([$., YS, MS, DS, $., HS]).
-
