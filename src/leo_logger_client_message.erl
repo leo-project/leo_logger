@@ -18,9 +18,8 @@
 %% specific language governing permissions and limitations
 %% under the License.
 %%
-%% ---------------------------------------------------------------------
-%% Leo Logger - Client (message)
-%% @doc
+%% @doc The logger client for handling messages
+%% @reference [https://github.com/leo-project/leo_logger/blob/master/src/leo_logger_client_message.erl]
 %% @end
 %%======================================================================
 -module(leo_logger_client_message).
@@ -45,12 +44,17 @@
 %%--------------------------------------------------------------------
 %% @doc Create loggers for message logs
 %%
--spec new(string(), integer()) -> ok.
+-spec(new(RootPath, Level) ->
+             ok when RootPath::string(),
+                     Level::integer()).
 new(RootPath, Level) ->
     new(RootPath, Level, [{?LOG_ID_FILE_INFO,  ?LOG_APPENDER_FILE},
                           {?LOG_ID_FILE_ERROR, ?LOG_APPENDER_FILE}]).
 
--spec new(string(), integer(), [{atom(), log_appender()}]) -> ok.
+-spec(new(RootPath, Level, Loggers) ->
+             ok when RootPath::string(),
+                     Level::integer(),
+                     Loggers::[{atom(), log_appender()}]).
 new(RootPath, Level, Loggers) ->
     %% change error-logger
     case gen_event:which_handlers(error_logger) of
@@ -83,34 +87,45 @@ new(RootPath, Level, Loggers) ->
 
 
 %% @doc Output kind of 'Debug log'
--spec debug(#message_log{}) -> ok.
+-spec(debug(Log) ->
+             ok when Log::#message_log{}).
 debug(Log) ->
     append(?LOG_GROUP_INFO, Log, ?LOG_LEVEL_DEBUG).
 
+
 %% @doc Output kind of 'Information log'
--spec(info(#message_log{}) -> ok).
+-spec(info(Log) ->
+             ok when Log::#message_log{}).
 info(Log) ->
     append(?LOG_GROUP_INFO, Log, ?LOG_LEVEL_INFO).
 
+
 %% @doc Output kind of 'Warning log'
--spec(warn(#message_log{}) -> ok).
+-spec(warn(Log) ->
+             ok when Log::#message_log{}).
 warn(Log) ->
     append(?LOG_GROUP_ERROR, Log, ?LOG_LEVEL_WARN).
 
+
 %% @doc Output kind of 'Error log'
--spec(error(#message_log{}) -> ok).
+-spec(error(Log) ->
+             ok when Log::#message_log{}).
 error(Log) ->
     append(?LOG_GROUP_ERROR, Log, ?LOG_LEVEL_ERROR).
 
+
 %% @doc Output kind of 'Fatal log'
--spec(fatal(#message_log{}) -> ok).
+-spec(fatal(Log) ->
+             ok when Log::#message_log{}).
 fatal(Log) ->
     append(?LOG_GROUP_ERROR, Log, ?LOG_LEVEL_FATAL).
 
 
 %% @doc Format a log message
 %%
--spec(format(atom(), #message_log{}) -> string()).
+-spec(format(Type, Log) ->
+             string() when Type::atom(),
+                           Log::#message_log{}).
 format(_Type, Log) ->
     #message_log{format  = Format,
                  message = Message} = Log,
@@ -136,7 +151,7 @@ format_1(#message_log{level    = Level,
                                    [log_level(Level),
                                     atom_to_list(node()),
                                     leo_date:date_format(),
-                                    unixtime(),
+                                    leo_date:unixtime(),
                                     Module, Function, integer_to_list(Line),
                                     Message], ?MAX_MSG_BODY_LEN) of
         {'EXIT', _Cause} ->
@@ -151,7 +166,10 @@ format_1(#message_log{level    = Level,
 %%--------------------------------------------------------------------
 %% @doc append a log.
 %% @private
--spec(append(atom(), #message_log{}, integer()) -> ok).
+-spec(append(GroupId, Log, Level) ->
+             ok when GroupId::atom(),
+                     Log::#message_log{},
+                     Level::integer()).
 append(GroupId, Log, Level) ->
     case catch ets:lookup(?ETS_LOGGER_GROUP, GroupId) of
         {'EXIT', Cause} ->
@@ -174,18 +192,11 @@ append(GroupId, Log, Level) ->
 
 %% @doc Set log-level
 %% @private
--spec log_level('undefined' | log_level()) -> string().
+-spec(log_level(Log) ->
+             string() when Log::'undefined'|log_level()).
 log_level(?LOG_LEVEL_DEBUG) -> "D";
 log_level(?LOG_LEVEL_INFO)  -> "I";
 log_level(?LOG_LEVEL_WARN)  -> "W";
 log_level(?LOG_LEVEL_ERROR) -> "E";
 log_level(?LOG_LEVEL_FATAL) -> "F";
 log_level(_)                -> "_".
-
-
-%% @doc get unix-time
-%% @private
--spec unixtime() -> integer().
-unixtime() ->
-    {H,S,_} = os:timestamp(),
-    list_to_integer(integer_to_list(H) ++ integer_to_list(S)).

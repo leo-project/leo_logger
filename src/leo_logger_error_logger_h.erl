@@ -17,7 +17,7 @@
 %% ---------------------------------------------------------------------
 %% Leo Logger - error-logger event handler
 %%
-%% @see Basho Lager - src/error_logger_lager_h.erl
+%% @reference Basho Lager - src/error_logger_lager_h.erl
 %% @doc
 %%======================================================================
 -module(leo_logger_error_logger_h).

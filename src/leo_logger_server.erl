@@ -18,9 +18,8 @@
 %% specific language governing permissions and limitations
 %% under the License.
 %%
-%% ---------------------------------------------------------------------
-%% Leo Logger - Server
-%% @doc
+%% @doc The log server
+%% @reference [https://github.com/leo-project/leo_logger/blob/master/src/leo_logger_server.erl]
 %% @end
 %%======================================================================
 -module(leo_logger_server).
@@ -40,27 +39,33 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
 
+
 %%--------------------------------------------------------------------
 %% API
 %%--------------------------------------------------------------------
-%% Function: start_link() -> {ok,Pid} | ignore | {error,Error}
-%% Description: Starts the server
--spec(start_link(atom(), atom(), atom(), [tuple()]) ->
-             {ok, pid()} | ignore | {error, any()}).
+%% @doc Start the server
+-spec(start_link(Id, Appender, CallbackMod, Props) ->
+             {ok, pid()} | ignore | {error, any()} when Id::atom(),
+                                                        Appender::atom(),
+                                                        CallbackMod::module(),
+                                                        Props::[{atom(), any()}]).
 start_link(Id, Appender, CallbackMod, Props) ->
     gen_server:start_link({local, Id}, ?MODULE, [Appender, CallbackMod, Props], []).
 
 
--spec(stop(pid()) ->
-             ok).
+%% @doc Stop the server
+-spec(stop(Id) ->
+             ok when Id::pid()|atom()).
 stop(Id) ->
     gen_server:call(Id, stop, 30000).
 
 
 %% @doc Append a message to a log-file.
 %%
--spec(append(?LOG_APPEND_SYNC|?LOG_APPEND_ASYNC, atom(), any()) ->
-             ok).
+-spec(append(Method, Id, Log) ->
+             ok when Method::?LOG_APPEND_SYNC|?LOG_APPEND_ASYNC,
+                     Id::atom(),
+                     Log::any()).
 append(Method, Id, Log) ->
     append(Method, Id, Log, 0).
 append(?LOG_APPEND_SYNC, Id, Log, Level) ->
@@ -69,34 +74,34 @@ append(?LOG_APPEND_ASYNC, Id, Log, Level) ->
     gen_server:cast(Id, {append, {Log, Level}}).
 
 
-%% @doc output bulked message to a log-file.
+%% @doc Output a bulked message to a log-file.
 %%
--spec(bulk_output(atom()) ->
-             ok).
+-spec(bulk_output(Id) ->
+             ok when Id::atom()).
 bulk_output(Id) ->
     gen_server:call(Id, bulk_output).
 
 
-%% @doc Sync a message to a log-file.
+%% @doc Synchronize a message to a log-file.
 %%
--spec(sync(atom()) ->
-             ok).
+-spec(sync(Id) ->
+             ok when Id::atom()).
 sync(Id) ->
     gen_server:call(Id, sync).
 
 
 %% @doc Rotate a log-file.
 %%
--spec(rotate(atom()) ->
-             ok).
+-spec(rotate(Id) ->
+             ok when Id::atom()).
 rotate(Id) ->
     gen_server:cast(Id, rotate).
 
 
 %% @doc Close a logger
 %%
--spec(close(atom()) ->
-             ok).
+-spec(close(Id) ->
+             ok when Id::atom()).
 close(Id) ->
     gen_server:call(Id, close).
 
@@ -104,11 +109,7 @@ close(Id) ->
 %%--------------------------------------------------------------------
 %% GEN_SERVER CALLBACKS
 %%--------------------------------------------------------------------
-%% Function: init(Args) -> {ok, State}          |
-%%                         {ok, State, Timeout} |
-%%                         ignore               |
-%%                         {stop, Reason}
-%% Description: Initiates the server
+%% @doc Initiates the server
 init([Appender, CallbackMod, Props]) ->
     Mod = ?appender_mod(Appender),
 
@@ -122,6 +123,7 @@ init([Appender, CallbackMod, Props]) ->
             {stop, Cause}
     end.
 
+%% @doc gen_server callback - Module:handle_call(Request, From, State) -> Result
 handle_call({stop, Id}, _From, State) ->
     case Id of
         ?LOG_APPENDER_FILE ->
@@ -191,10 +193,10 @@ handle_call(close, _From, #logger_state{appender_mod = Mod} = State) ->
     {reply, ok, State}.
 
 
-%% Function: handle_cast(Msg, State) -> {noreply, State}          |
-%%                                      {noreply, State, Timeout} |
-%%                                      {stop, Reason, State}
-%% Description: Handling cast messages
+%% @doc Handling cast message
+%% <p>
+%% gen_server callback - Module:handle_cast(Request, State) -> Result.
+%% </p>
 handle_cast({append, {Log, Level}}, #logger_state{level = RegisteredLevel} = State) ->
     NewState = case (Level >= RegisteredLevel) of
                    true  -> append_sub(Log, State);
@@ -206,25 +208,22 @@ handle_cast(rotate, State) ->
     {noreply, defer_rotate(State)}.
 
 
-%% Function: handle_info(Info, State) -> {noreply, State}          |
-%%                                       {noreply, State, Timeout} |
-%%                                       {stop, Reason, State}
-%% Description: Handling all non call/cast messages
-%% handle_info({_Label, {_From, MRef}, get_modules}, State) ->
-%%     {noreply, State};
+%% @doc Handling all non call/cast messages
+%% <p>
+%% gen_server callback - Module:handle_info(Info, State) -> Result.
+%% </p>
 handle_info(_Info, State) ->
     {noreply, State}.
 
-%% Function: terminate(Reason, State) -> void()
-%% Description: This function is called by a gen_server when it is about to
-%% terminate. It should be the opposite of Module:init/1 and do any necessary
-%% cleaning up. When it returns, the gen_server terminates with Reason.
-%% The return value is ignored.
+
+%% @doc This function is called by a gen_server when it is about to
+%%      terminate. It should be the opposite of Module:init/1 and do any necessary
+%%      cleaning up. When it returns, the gen_server terminates with Reason.
 terminate(_Reason, _State) ->
     ok.
 
-%% Func: code_change(OldVsn, State, Extra) -> {ok, NewState}
-%% Description: Convert process state when code is changed
+
+%% @doc Convert process state when code is changed
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
