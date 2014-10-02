@@ -106,13 +106,10 @@ start_app() ->
                                                 [named_table, bag, public, {read_concurrency,true}]),
                     ok;
                 {error,{{already_started,_},_}} ->
-                    ?debugVal(already_started),
                     ok;
                 {error, {already_started,_}} ->
-                    ?debugVal(already_started),
                     ok;
                 Error ->
-                    ?debugVal(Error),
                     Error
             end;
         _ ->

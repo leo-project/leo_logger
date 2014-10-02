@@ -128,7 +128,10 @@ sync(State) ->
 %% @doc Rotate the log file
 %%
 -spec(rotate(Hours, State) ->
-             {ok, #logger_state{}} when Hours::{integer(), integer(), integer(), integer()},
+             {ok, #logger_state{}} when Hours::{integer(),
+                                                integer(),
+                                                integer(),
+                                                integer()},
                                         State::#logger_state{}).
 rotate(Hours, #logger_state{props = Props} = State) ->
     BaseFileName    = leo_misc:get_value(?FILE_PROP_FILE_NAME, Props),
@@ -150,6 +153,21 @@ close(#logger_state{props = Props} = _State) ->
     CurrentFileName = leo_misc:get_value(?FILE_PROP_CUR_NAME, Props),
     Handler         = leo_misc:get_value(?FILE_PROP_HANDLER,  Props),
     ok = close(CurrentFileName, Handler),
+    case filelib:file_size(CurrentFileName) of
+        0 ->
+            %% if the files size is zero, it is removed
+            catch file:delete(CurrentFileName);
+        _ ->
+            void
+    end,
+    ok.
+
+%% @doc Close a log file
+%% @private
+close(FileName, Handler) ->
+    io:format("* closing log file is ~s~n", [FileName]),
+    catch file:datasync(Handler),
+    catch file:close(Handler),
     ok.
 
 
@@ -160,10 +178,10 @@ close(#logger_state{props = Props} = _State) ->
 %% @private
 open(BaseFileName, DateHour) ->
     _ = filelib:ensure_dir(BaseFileName),
-    FileName = BaseFileName ++ suffix(DateHour),
+    FileName = filename(BaseFileName, DateHour, 1),
     io:format("* opening log file is ~s~n", [FileName]),
 
-    {ok, Handler} = file:open(FileName, [read, write, raw]),
+    {ok, Handler}  = file:open(FileName, [read, write, raw]),
     {ok, Location} = file:position(Handler, eof),
     fix_log(Handler, Location),
 
@@ -173,18 +191,22 @@ open(BaseFileName, DateHour) ->
         _ ->
             void
     end,
-
     file:make_symlink(FileName, BaseFileName),
     {FileName, Handler}.
 
-
-%% @doc Close a log file
+%% @doc Create name of a new file
 %% @private
-close(FileName, Handler) ->
-    io:format("* closing log file is ~s~n", [FileName]),
-    catch file:datasync(Handler),
-    catch file:close(Handler),
-    ok.
+filename(BaseFileName, DateHour, Branch) ->
+    FileName = lists:append([BaseFileName,
+                             suffix(DateHour),
+                             ".", integer_to_list(Branch)
+                            ]),
+    case filelib:is_file(FileName) of
+        true ->
+            filename(BaseFileName, DateHour, Branch + 1);
+        _ ->
+            FileName
+    end.
 
 
 %% @doc Seek backwards to the last valid log entry
