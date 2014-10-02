@@ -19,7 +19,7 @@
 %% under the License.
 %%
 %% @doc The log utils
-%% @reference [https://github.com/leo-project/leo_logger/blob/master/src/leo_logger_util.erl]
+%% @reference https://github.com/leo-project/leo_logger/blob/master/src/leo_logger_util.erl
 %% @end
 %%======================================================================
 -module(leo_logger_util).

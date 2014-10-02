@@ -19,7 +19,7 @@
 %% under the License.
 %%
 %% @doc The log server
-%% @reference [https://github.com/leo-project/leo_logger/blob/master/src/leo_logger_server.erl]
+%% @reference https://github.com/leo-project/leo_logger/blob/master/src/leo_logger_server.erl
 %% @end
 %%======================================================================
 -module(leo_logger_server).

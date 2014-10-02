@@ -19,7 +19,7 @@
 %% under the License.
 %%
 %% @doc The base of logger client
-%% @reference [https://github.com/leo-project/leo_logger/blob/master/src/leo_logger_client_base.erl]
+%% @reference https://github.com/leo-project/leo_logger/blob/master/src/leo_logger_client_base.erl
 %% @end
 %%======================================================================
 -module(leo_logger_client_base).

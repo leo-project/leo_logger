@@ -19,7 +19,7 @@
 %% under the License.
 %%
 %% @doc The logger client for handling messages
-%% @reference [https://github.com/leo-project/leo_logger/blob/master/src/leo_logger_client_message.erl]
+%% @reference https://github.com/leo-project/leo_logger/blob/master/src/leo_logger_client_message.erl
 %% @end
 %%======================================================================
 -module(leo_logger_client_message).

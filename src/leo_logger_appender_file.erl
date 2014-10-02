@@ -19,7 +19,7 @@
 %% under the License.
 %%
 %% @doc The file appender
-%% @reference [https://github.com/leo-project/leo_logger/blob/master/src/leo_logger_appender_file.erl]
+%% @reference https://github.com/leo-project/leo_logger/blob/master/src/leo_logger_appender_file.erl
 %% @end
 %%======================================================================
 -module(leo_logger_appender_file).
