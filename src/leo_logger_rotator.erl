@@ -19,7 +19,7 @@
 %% under the License.
 %%
 %% @doc The log rotator
-%% @reference [https://github.com/leo-project/leo_logger/blob/master/src/leo_logger_rotator.erl]
+%% @reference https://github.com/leo-project/leo_logger/blob/master/src/leo_logger_rotator.erl
 %% @end
 %%======================================================================
 -module(leo_logger_rotator).

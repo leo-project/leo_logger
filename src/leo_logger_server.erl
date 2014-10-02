@@ -1,4 +1,4 @@
-%%======================================================================
+%======================================================================
 %%
 %% Leo Logger
 %%
@@ -19,7 +19,7 @@
 %% under the License.
 %%
 %% @doc The log server
-%% @reference [https://github.com/leo-project/leo_logger/blob/master/src/leo_logger_server.erl]
+%% @reference https://github.com/leo-project/leo_logger/blob/master/src/leo_logger_server.erl
 %% @end
 %%======================================================================
 -module(leo_logger_server).
@@ -33,7 +33,8 @@
 
 -export([start_link/4, stop/1]).
 -export([append/3, append/4,
-         bulk_output/1, sync/1, rotate/1,
+         bulk_output/1, sync/1,
+         rotate/1, force_rotation/1,
          close/1
         ]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -96,6 +97,14 @@ sync(Id) ->
              ok when Id::atom()).
 rotate(Id) ->
     gen_server:cast(Id, rotate).
+
+
+%% @doc Rotate a log-file.
+%%
+-spec(force_rotation(Id) ->
+             ok when Id::atom()).
+force_rotation(Id) ->
+    gen_server:cast(Id, force_rotation).
 
 
 %% @doc Close a logger
@@ -205,7 +214,10 @@ handle_cast({append, {Log, Level}}, #logger_state{level = RegisteredLevel} = Sta
     {noreply, NewState};
 
 handle_cast(rotate, State) ->
-    {noreply, defer_rotate(State)}.
+    {noreply, defer_rotate(State)};
+
+handle_cast(force_rotation, State) ->
+    {noreply, force_rotation_fun(State)}.
 
 
 %% @doc Handling all non call/cast messages
@@ -298,4 +310,17 @@ defer_rotate(#logger_state{appender_mod = Module,
                 _ ->
                     State
             end
+    end.
+
+%% @doc Force log rotation
+%% @private
+-spec(force_rotation_fun(State) ->
+      ok when State::#logger_state{}).
+force_rotation_fun(#logger_state{appender_mod = Module} = State) ->
+    {{Y, M, D}, {H, _, _}} = calendar:now_to_local_time(now()),
+    case catch erlang:apply(Module, rotate, [{Y, M, D, H}, State]) of
+        {ok, NewState} ->
+            NewState;
+        _ ->
+            State
     end.
