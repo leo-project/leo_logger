@@ -29,7 +29,8 @@
 -include("leo_logger.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
--export([new/4, format/2, append/1, sync/1]).
+-export([new/4, format/2, append/1, sync/1,
+         force_rotation/1]).
 
 
 %%--------------------------------------------------------------------
@@ -75,8 +76,15 @@ append({LogId, Log}) ->
 %% @doc Sync a log file
 %%
 -spec(sync(LogId) ->
-             ok | {error, _} when LogId::atom|#logger_state{}).
+             ok | {error, _} when LogId::atom()|#logger_state{}).
 sync(LogId) when is_atom(LogId) ->
     leo_logger_server:sync(LogId);
 sync(_L) ->
     ok.
+
+
+%% @doc Force log-rotation
+-spec(force_rotation(LogId) ->
+             ok | {error, _} when LogId::atom()).
+force_rotation(LogId) ->
+    leo_logger_server:force_rotation(LogId).
