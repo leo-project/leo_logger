@@ -87,6 +87,9 @@ append_(_) ->
                                                                 leo_date:date_format(),
                                                                 unixtime()
                                                                ]}}),
+
+    ?debugVal("force_rotation"),
+    ok = leo_logger_client_base:force_rotation(LogId),
     ok = leo_logger_client_base:append({LogId,
                                         #message_log{format  = "[~s]\t~s\t~w\t\~s\t~w\n",
                                                      message = ["PUT", "leo/fast/storage/system/11", 13075,
