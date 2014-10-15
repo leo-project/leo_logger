@@ -138,7 +138,7 @@ rotate(Hours, #logger_state{props = Props} = State) ->
     CurrentFileName = leo_misc:get_value(?FILE_PROP_CUR_NAME,  Props),
     Handler         = leo_misc:get_value(?FILE_PROP_HANDLER,   Props),
 
-    ok = close(CurrentFileName, Handler),
+    ok = close(BaseFileName, CurrentFileName, Handler),
     {NewLogFileName, NewHandler} = open(BaseFileName, Hours),
     {ok, State#logger_state{props = [{?FILE_PROP_FILE_NAME, BaseFileName},
                                      {?FILE_PROP_CUR_NAME,  NewLogFileName},
@@ -153,23 +153,23 @@ close(#logger_state{props = Props} = _State) ->
     LinkedFileName  = leo_misc:get_value(?FILE_PROP_FILE_NAME, Props, []),
     CurrentFileName = leo_misc:get_value(?FILE_PROP_CUR_NAME,  Props, []),
     Handler         = leo_misc:get_value(?FILE_PROP_HANDLER,   Props),
-    ok = close(CurrentFileName, Handler),
-    case filelib:file_size(CurrentFileName) of
-        0 ->
-            %% if the files size is zero, it is removed
-            catch file:delete(LinkedFileName),
-            catch file:delete(CurrentFileName);
-        _ ->
-            void
-    end,
+    ok = close(LinkedFileName, CurrentFileName, Handler),
     ok.
 
 %% @doc Close a log file
 %% @private
-close(FileName, Handler) ->
+close(LinkedFileName, FileName, Handler) ->
     io:format("* closing log file is ~s~n", [FileName]),
     catch file:datasync(Handler),
     catch file:close(Handler),
+    case filelib:file_size(FileName) of
+        0 ->
+            %% if the files size is zero, it is removed
+            catch file:delete(LinkedFileName),
+            catch file:delete(FileName);
+        _ ->
+            void
+    end,
     ok.
 
 
