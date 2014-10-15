@@ -150,12 +150,14 @@ rotate(Hours, #logger_state{props = Props} = State) ->
 -spec(close(State) ->
              ok | {error, any()} when State::#logger_state{}).
 close(#logger_state{props = Props} = _State) ->
-    CurrentFileName = leo_misc:get_value(?FILE_PROP_CUR_NAME, Props),
-    Handler         = leo_misc:get_value(?FILE_PROP_HANDLER,  Props),
+    LinkedFileName  = leo_misc:get_value(?FILE_PROP_FILE_NAME, Props, []),
+    CurrentFileName = leo_misc:get_value(?FILE_PROP_CUR_NAME,  Props, []),
+    Handler         = leo_misc:get_value(?FILE_PROP_HANDLER,   Props),
     ok = close(CurrentFileName, Handler),
     case filelib:file_size(CurrentFileName) of
         0 ->
             %% if the files size is zero, it is removed
+            catch file:delete(LinkedFileName),
             catch file:delete(CurrentFileName);
         _ ->
             void
