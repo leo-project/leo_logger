@@ -297,7 +297,7 @@ bulk_output_sub(Logs, #logger_state{appender_mod = Mod} = State) ->
              ok).
 defer_rotate(#logger_state{appender_mod = Module,
                            hourstamp    = HourStamp} = State) ->
-    {{Y, M, D}, {H, _, _}} = calendar:now_to_local_time(now()),
+    {{Y, M, D}, {H, _, _}} = calendar:now_to_local_time(os:timestamp()),
     ThisHour = {Y, M, D, H},
 
     case (ThisHour == HourStamp) of
@@ -317,7 +317,7 @@ defer_rotate(#logger_state{appender_mod = Module,
 -spec(force_rotation_fun(State) ->
       ok when State::#logger_state{}).
 force_rotation_fun(#logger_state{appender_mod = Module} = State) ->
-    {{Y, M, D}, {H, _, _}} = calendar:now_to_local_time(now()),
+    {{Y, M, D}, {H, _, _}} = calendar:now_to_local_time(os:timestamp()),
     case catch erlang:apply(Module, rotate, [{Y, M, D, H}, State]) of
         {ok, NewState} ->
             NewState;
