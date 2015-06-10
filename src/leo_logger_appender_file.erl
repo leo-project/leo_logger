@@ -49,7 +49,7 @@ init(Appender, CallbackMod, Props) ->
     FileName = leo_misc:get_value(?FILE_PROP_FILE_NAME, Props),
     Level    = leo_misc:get_value(?FILE_PROP_LOG_LEVEL, Props),
 
-    {{Y, M, D}, {H, _, _}} = calendar:now_to_local_time(now()),
+    {{Y, M, D}, {H, _, _}} = calendar:now_to_local_time(os:timestamp()),
     DateHour =  {Y, M, D, H},
 
     BasePath = filename:join(RootPath, FileName),
