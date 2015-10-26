@@ -86,10 +86,19 @@ format(Log) ->
 %% @private
 inspect() ->
     ok = ?debug("test_log", "~p", [debug]),
+    ok = ?debug("test_log", [{msg, debug}]),
+
     ok = ?info("test_log",  "~p", [info]),
+    ok = ?info("test_log", [{msg, info}]),
+
     ok = ?warn("test_log",  "~p", [warn]),
+    ok = ?warn("test_log", [{msg, warn}]),
+
     ok = ?error("test_log", "~p", [error]),
+    ok = ?error("test_log", [{msg, error}]),
+
     ok = ?fatal("test_log", "~p", [fatal]),
+    ok = ?fatal("test_log", [{msg, fatal}]),
     timer:sleep(timer:seconds(3)),
 
     Error = {badarg,[{erlang,integer_to_list,[aaa],[]},
