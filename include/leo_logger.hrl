@@ -127,7 +127,7 @@
                                                      function = _Func,
                                                      line     = ?LINE,
                                                      format   = "~p",
-                                                     message  = _MsgL})).
+                                                     message  = [_MsgL]})).
 -define(error(_Func,_Format,_Message),
         leo_logger_client_message:error(#message_log{level    = ?LOG_LEVEL_ERROR,
                                                      module   = ?MODULE_STRING,
@@ -141,7 +141,7 @@
                                                      function = _Func,
                                                      line     = ?LINE,
                                                      format   = "~p",
-                                                     message  = _MsgL})).
+                                                     message  = [_MsgL]})).
 -define(warn(_Func,_Format,_Message),
         leo_logger_client_message:warn(#message_log{level    = ?LOG_LEVEL_WARN,
                                                     module   = ?MODULE_STRING,
@@ -155,7 +155,7 @@
                                                     function = _Func,
                                                     line     = ?LINE,
                                                     format   = "~p",
-                                                    message  = _MsgL})).
+                                                    message  = [_MsgL]})).
 -define(info(_Func,_Format,_Message),
         leo_logger_client_message:info(#message_log{level    = ?LOG_LEVEL_INFO,
                                                     module   = ?MODULE_STRING,
@@ -169,7 +169,7 @@
                                                     function = _Func,
                                                     line     = ?LINE,
                                                     format   = "~p",
-                                                    message  = _MsgL})).
+                                                    message  = [_MsgL]})).
 -define(debug(_Func,_Format,_Message),
         leo_logger_client_message:debug(#message_log{level    = ?LOG_LEVEL_DEBUG,
                                                      module   = ?MODULE_STRING,
@@ -183,4 +183,4 @@
                                                      function = _Func,
                                                      line     = ?LINE,
                                                      format   = "~p",
-                                                     message  = _MsgL})).
+                                                     message  = [_MsgL]})).
