@@ -87,18 +87,23 @@ format(Log) ->
 inspect() ->
     ok = ?debug("test_log", "~p", [debug]),
     ok = ?debug("test_log", [{msg, debug}]),
+    ok = ?debug("test_log", [{msg, debug},{cause, 'not_found'}]),
 
     ok = ?info("test_log",  "~p", [info]),
     ok = ?info("test_log", [{msg, info}]),
+    ok = ?info("test_log", [{msg, info}, {cause, 'not_found'}]),
 
     ok = ?warn("test_log",  "~p", [warn]),
     ok = ?warn("test_log", [{msg, warn}]),
+    ok = ?warn("test_log", [{msg, warn}, {cause, 'not_found'}]),
 
     ok = ?error("test_log", "~p", [error]),
     ok = ?error("test_log", [{msg, error}]),
+    ok = ?error("test_log", [{msg, error}, {cause, 'not_found'}]),
 
     ok = ?fatal("test_log", "~p", [fatal]),
     ok = ?fatal("test_log", [{msg, fatal}]),
+    ok = ?fatal("test_log", [{msg, fatal},{cause, 'not_found'}]),
     timer:sleep(timer:seconds(3)),
 
     Error = {badarg,[{erlang,integer_to_list,[aaa],[]},
@@ -120,7 +125,7 @@ inspect() ->
                               {body, "TEST-2"}]),
     error_logger:info_msg("~p,~p,~p,~p~n",
                           [{module, ?MODULE_STRING}, {function, "inspect/0"},
-                            {line, ?LINE},
+                           {line, ?LINE},
                            {body, "TEST-3"}]),
 
     Res0 = os:cmd("ls " ++ ?TEST_LOG_DIR),
@@ -149,4 +154,3 @@ append_messages(Index) ->
     append_messages(Index - 1).
 
 -endif.
-
