@@ -1,4 +1,4 @@
-%======================================================================
+%%======================================================================
 %%
 %% Leo Logger
 %%
@@ -35,6 +35,7 @@
 -export([append/3, append/4,
          bulk_output/1, sync/1,
          rotate/1, force_rotation/1,
+         update_log_level/2,
          close/1
         ]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -105,6 +106,14 @@ rotate(Id) ->
              ok when Id::atom()).
 force_rotation(Id) ->
     gen_server:cast(Id, force_rotation).
+
+
+%% @doc Update the log-level
+-spec(update_log_level(Id, LogLevel) ->
+             ok when Id::atom(),
+                     LogLevel::non_neg_integer()).
+update_log_level(Id, LogLevel) ->
+    gen_server:call(Id, {update_log_level, LogLevel}).
 
 
 %% @doc Close a logger
@@ -196,6 +205,9 @@ handle_call(bulk_output, _From, #logger_state{buffer = Buf} = State) ->
 handle_call(sync, _From, #logger_state{appender_mod = Mod} = State) ->
     catch erlang:apply(Mod, sync, [State]),
     {reply, ok, State};
+
+handle_call({update_log_level, Level}, _From, State) ->
+    {reply, ok, State#logger_state{level = Level}};
 
 handle_call(close, _From, #logger_state{appender_mod = Mod} = State) ->
     catch erlang:apply(Mod, close, [State]),
@@ -315,7 +327,7 @@ defer_rotate(#logger_state{appender_mod = Module,
 %% @doc Force log rotation
 %% @private
 -spec(force_rotation_fun(State) ->
-      ok when State::#logger_state{}).
+             ok when State::#logger_state{}).
 force_rotation_fun(#logger_state{appender_mod = Module} = State) ->
     {{Y, M, D}, {H, _, _}} = calendar:now_to_local_time(os:timestamp()),
     case catch erlang:apply(Module, rotate, [{Y, M, D, H}, State]) of

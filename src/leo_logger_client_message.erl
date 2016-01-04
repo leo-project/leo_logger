@@ -30,14 +30,15 @@
 -include_lib("eunit/include/eunit.hrl").
 
 -export([new/2, new/3,
+         update_log_level/1,
          debug/1, info/1, warn/1, error/1, fatal/1,
          format/2]).
 
--define(LOG_FILE_NAME_INFO,  "info").
+-define(LOG_FILE_NAME_INFO, "info").
 -define(LOG_FILE_NAME_ERROR, "error").
--define(LOG_GROUP_INFO,      'log_group_message_info').
--define(LOG_GROUP_ERROR,     'log_group_message_error').
--define(MAX_MSG_BODY_LEN,    4096).
+-define(LOG_GROUP_INFO, 'log_group_message_info').
+-define(LOG_GROUP_ERROR, 'log_group_message_error').
+-define(MAX_MSG_BODY_LEN, 4096).
 
 %%--------------------------------------------------------------------
 %% API
@@ -48,7 +49,7 @@
              ok when RootPath::string(),
                      Level::integer()).
 new(RootPath, Level) ->
-    new(RootPath, Level, [{?LOG_ID_FILE_INFO,  ?LOG_APPENDER_FILE},
+    new(RootPath, Level, [{?LOG_ID_FILE_INFO, ?LOG_APPENDER_FILE},
                           {?LOG_ID_FILE_ERROR, ?LOG_APPENDER_FILE}]).
 
 -spec(new(RootPath, Level, Loggers) ->
@@ -61,9 +62,13 @@ new(RootPath, Level, Loggers) ->
         [leo_logger_error_logger_h] ->
             void;
         _ ->
-            ok = gen_event:add_sup_handler(error_logger, leo_logger_error_logger_h, []),
-            _ = [begin error_logger:delete_report_handler(X), X end ||
-                    X <- gen_event:which_handlers(error_logger) -- [leo_logger_error_logger_h]]
+            ok = gen_event:add_sup_handler(error_logger,
+                                           leo_logger_error_logger_h, []),
+            _ = [begin
+                     error_logger:delete_report_handler(X),
+                     X
+                 end || X <- gen_event:which_handlers(error_logger)
+                            -- [leo_logger_error_logger_h]]
     end,
 
     %% create loggers
@@ -83,6 +88,31 @@ new(RootPath, Level, Loggers) ->
                                   ok = leo_logger_util:add_appender(?LOG_GROUP_ERROR,Id)
                           end
                   end, Loggers),
+    ok.
+
+
+%% @doc Update the log level of the info/error logger
+-spec(update_log_level(Level) ->
+             ok | {error, any()} when Level::log_level()).
+update_log_level(Level) when Level /= ?LOG_LEVEL_DEBUG,
+                             Level /= ?LOG_LEVEL_INFO,
+                             Level /= ?LOG_LEVEL_WARN,
+                             Level /= ?LOG_LEVEL_ERROR,
+                             Level /= ?LOG_LEVEL_FATAL ->
+    {error, badarg};
+update_log_level(Level) ->
+    case whereis(?LOG_ID_FILE_INFO) of
+        undefined ->
+            void;
+        _ ->
+            leo_logger_server:update_log_level(?LOG_ID_FILE_INFO, Level)
+    end,
+    case whereis(?LOG_ID_FILE_ERROR) of
+        undefined ->
+            void;
+        _ ->
+            leo_logger_server:update_log_level(?LOG_ID_FILE_ERROR, Level)
+    end,
     ok.
 
 
