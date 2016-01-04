@@ -30,6 +30,7 @@
 -include_lib("eunit/include/eunit.hrl").
 
 -export([new/4, format/2, append/1, sync/1,
+         update_log_level/2,
          force_rotation/1]).
 
 
@@ -37,7 +38,6 @@
 %% API
 %%--------------------------------------------------------------------
 %% @doc Create loggers for message logs
-%%
 -spec(new(LogGroup, LogId, RootPath, LogFileName) ->
              ok when LogGroup::atom(),
                      LogId::atom(),
@@ -52,7 +52,6 @@ new(LogGroup, LogId, RootPath, LogFileName) ->
 
 
 %% @doc Format a log message
-%%
 -spec(format(Appender, Log) ->
              string() when Appender::atom(),
                            Log::#message_log{}).
@@ -61,7 +60,6 @@ format(Appender, Log) ->
 
 
 %% @doc Append a message to a file
-%%
 -spec(append(LogInfo) ->
              ok when LogInfo::{atom(), #message_log{}}).
 append({LogId, Log}) ->
@@ -74,13 +72,31 @@ append({LogId, Log}) ->
 
 
 %% @doc Sync a log file
-%%
 -spec(sync(LogId) ->
              ok | {error, _} when LogId::atom()|#logger_state{}).
 sync(LogId) when is_atom(LogId) ->
     leo_logger_server:sync(LogId);
 sync(_L) ->
     ok.
+
+
+%% @doc Update the log-level
+-spec(update_log_level(LogId, Level) ->
+             ok | {error, any()} when LogId::atom(),
+                                      Level::log_level()).
+update_log_level(_LogId, Level) when Level /= ?LOG_LEVEL_DEBUG,
+                                     Level /= ?LOG_LEVEL_INFO,
+                                     Level /= ?LOG_LEVEL_WARN,
+                                     Level /= ?LOG_LEVEL_ERROR,
+                                     Level /= ?LOG_LEVEL_FATAL ->
+    {error, badarg};
+update_log_level(LogId, Level) ->
+    case whereis(LogId) of
+        undefined ->
+            {error, not_exist_process};
+        _ ->
+            leo_logger_server:update_log_level(LogId, Level)
+    end.
 
 
 %% @doc Force log-rotation

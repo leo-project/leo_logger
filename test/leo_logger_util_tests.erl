@@ -128,15 +128,29 @@ inspect() ->
                            {line, ?LINE},
                            {body, "TEST-3"}]),
 
-    Res0 = os:cmd("ls " ++ ?TEST_LOG_DIR),
-    Res1 = string:tokens(Res0, " \n"),
-    ?assertEqual(true, (Res1 /= [])),
+    Ret_1 = os:cmd("ls " ++ ?TEST_LOG_DIR),
+    Ret_2 = string:tokens(Ret_1, " \n"),
+    ?debugVal({length(Ret_2), Ret_2}),
+    ?assertEqual(true, (Ret_2 /= [])),
 
-    Res2 = string:tokens(os:cmd("less " ++ ?TEST_LOG_DIR ++ "/" ++  lists:nth(1, Res1)), "\n"),
-    Res3 = string:tokens(os:cmd("less " ++ ?TEST_LOG_DIR ++ "/" ++  lists:nth(2, Res1)), "\n"),
+    Ret_3 = string:tokens(os:cmd("less " ++ ?TEST_LOG_DIR ++ "/" ++  lists:nth(1, Ret_2)), "\n"),
+    Ret_4 = string:tokens(os:cmd("less " ++ ?TEST_LOG_DIR ++ "/" ++  lists:nth(2, Ret_2)), "\n"),
 
-    ?assertEqual(true, (Res2 /= [])),
-    ?assertEqual(true, (Res3 /= [])),
+    ?assertEqual(true, (Ret_3 /= [])),
+    ?assertEqual(true, (Ret_4 /= [])),
+
+    %% update the log-level
+    ok = leo_logger_client_message:update_log_level(?LOG_LEVEL_WARN),
+    ok = ?debug("test_log", "~p", [debug]),
+    ok = ?debug("test_log", [{msg, debug}]),
+    ok = ?debug("test_log", [{msg, debug},{cause, 'not_found'}]),
+    ok = ?info("test_log",  "~p", [info]),
+    ok = ?info("test_log", [{msg, info}]),
+    ok = ?info("test_log", [{msg, info}, {cause, 'not_found'}]),
+    Ret_5 = os:cmd("ls " ++ ?TEST_LOG_DIR),
+    Ret_6 = string:tokens(Ret_5, " \n"),
+    ?debugVal({length(Ret_6), Ret_6}),
+    ?assertEqual(length(Ret_2), length(Ret_6)),
     ok.
 
 
