@@ -2,7 +2,7 @@
 %%
 %% Leo Logger
 %%
-%% Copyright (c) 2012-2014 Rakuten, Inc.
+%% Copyright (c) 2012-2017 Rakuten, Inc.
 %%
 %% This file is provided to you under the Apache License,
 %% Version 2.0 (the "License"); you may not use this file
@@ -18,10 +18,6 @@
 %% specific language governing permissions and limitations
 %% under the License.
 %%
-%% ---------------------------------------------------------------------
-%% Leo Logger
-%% @doc
-%% @end
 %%======================================================================
 %% log-level
 -define(LOG_LEVEL_DEBUG, 0).
