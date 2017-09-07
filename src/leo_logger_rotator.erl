@@ -39,6 +39,10 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
 
+%% Lager rotator callbacks
+-export([create_logfile/2, open_logfile/2,
+         ensure_logfile/4, rotate_logfile/2]).
+
 -ifdef(TEST).
 -define(DEF_ROTATION_INTERVAL, timer:seconds(10)).
 -else.
@@ -73,6 +77,50 @@ start_link(ServerId, Mod, RotationInterval) ->
              ok when Pid::pid()).
 stop(Pid) ->
     gen_server:cast(Pid, stop).
+
+
+create_logfile(Name, Buffer) ->
+    {{Y, M, D}, {H, _, _}} = calendar:now_to_local_time(os:timestamp()),
+    DateHour =  {Y, M, D, H},
+    FileName = leo_logger_appender_file:filename(Name, DateHour, 1),
+    file:delete(Name),
+    file:make_symlink(filename:absname(FileName), Name),
+    lager_util:open_logfile(FileName, Buffer).
+
+
+open_logfile(Name, Buffer) ->
+    case file:read_link(Name) of
+        {ok, _} ->
+            lager_util:open_logfile(Name, Buffer);
+        _ ->
+            create_logfile(Name, Buffer)
+    end.
+
+
+ensure_logfile(Name, FD, Inode, Buffer) ->
+    case file:read_link(Name) of
+        {ok, _} ->
+            lager_util:ensure_logfile(Name, FD, Inode, Buffer);
+        _ ->
+            create_logfile(Name, Buffer)
+    end.
+
+
+rotate_logfile(Name, _Count) ->
+    case file:read_link(Name) of
+        {ok, LinkedName} ->
+            case filelib:file_size(LinkedName) of
+                0 ->
+                    %% if the files size is zero, it is removed
+                    catch file:delete(LinkedName);
+                _ ->
+                    void
+            end;
+        _ ->
+            void
+    end,
+    {ok, {FD, _, _}} = create_logfile(Name, []),
+    file:close(FD).
 
 
 %%--------------------------------------------------------------------

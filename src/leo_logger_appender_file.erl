@@ -33,7 +33,7 @@
 
 -export([init/3, append/2, bulk_output/2,
          sync/1, format/2, rotate/2,
-         close/1]).
+         close/1, filename/3]).
 
 %%--------------------------------------------------------------------
 %% API
@@ -173,6 +173,21 @@ close(LinkedFileName, FileName, Handler) ->
     ok.
 
 
+%% @doc Create name of a new file
+%% @private
+filename(BaseFileName, DateHour, Branch) ->
+    FileName = lists:append([BaseFileName,
+                             suffix(DateHour),
+                             ".", integer_to_list(Branch)
+                            ]),
+    case filelib:is_file(FileName) of
+        true ->
+            filename(BaseFileName, DateHour, Branch + 1);
+        _ ->
+            FileName
+    end.
+
+
 %%--------------------------------------------------------------------
 %%% INNER FUNCTIONS
 %%--------------------------------------------------------------------
@@ -195,20 +210,6 @@ open(BaseFileName, DateHour) ->
     end,
     file:make_symlink(FileName, BaseFileName),
     {FileName, Handler}.
-
-%% @doc Create name of a new file
-%% @private
-filename(BaseFileName, DateHour, Branch) ->
-    FileName = lists:append([BaseFileName,
-                             suffix(DateHour),
-                             ".", integer_to_list(Branch)
-                            ]),
-    case filelib:is_file(FileName) of
-        true ->
-            filename(BaseFileName, DateHour, Branch + 1);
-        _ ->
-            FileName
-    end.
 
 
 %% @doc Seek backwards to the last valid log entry

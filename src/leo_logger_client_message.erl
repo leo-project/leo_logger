@@ -177,7 +177,7 @@ format_1(#message_log{level    = Level,
                       function = Function,
                       line     = Line,
                       message  = Message}) ->
-    case catch lager_format:format("[~s]\t~s\t~s\t~w\t~s:~s\t~s\t~s\r\n",
+    case catch lager_format:format("[~s]\t~s\t~s\t~w\t~s:~s\t~s\t~s\n",
                                    [log_level(Level),
                                     atom_to_list(node()),
                                     leo_date:date_format(),
