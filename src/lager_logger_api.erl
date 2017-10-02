@@ -37,6 +37,8 @@
 
 -define(LOG_FILE_NAME_INFO, "info").
 -define(LOG_FILE_NAME_ERROR, "error").
+-define(LOG_FILE_NAME_ACCESS, "access").
+-define(LOG_ID_TO_SINK_ETS, 'lager_logid_sink').
 
 -define(log_handlers(_LogLvl),
         case _LogLvl of
@@ -77,50 +79,33 @@ new(RootPath, Level) ->
 new(RootPath, Level, _Loggers) ->
     application:set_env(lager, log_root, RootPath),
     application:set_env(lager, crash_log, "crash.log"),
+    application:set_env(lager, error_logger_hwm, 500),
+    error_logger:info_msg("Setup Lager Logger API~n", []),
 
-    ok = application:set_env(lager, handlers,
-                             [{lager_file_backend, [{file, ?LOG_FILE_NAME_INFO}, {level, none},
-                                                    {size, 10485760}, {date, "$H0"}, {count, 100},
-                                                    {formatter, lager_leofs_formatter},
-                                                    {formatter_config, ["[", sev, "]\t", atom_to_list(node()), "\t", leodate, "\t", leotime, "\t", {module, "null"}, ":", {function, "null"}, "\t", {line, "0"}, "\t", message, "\n"]},
-                                                    {rotator, leo_logger_rotator}
-                                                   ]},
-                              {lager_file_backend, [{file, ?LOG_FILE_NAME_ERROR}, {level, none},
-                                                    {size, 10485760}, {date, "$H0"}, {count, 100},
-                                                    {formatter, lager_leofs_formatter},
-                                                    {formatter_config, ["[", sev, "]\t", atom_to_list(node()), "\t", leodate, "\t", leotime, "\t", {module, "null"}, ":", {function, "null"}, "\t", {line, "0"}, "\t", message, "\n"]},
-                                                    {rotator, leo_logger_rotator}
-                                                   ]}
-                             ]),
-    ok = application:set_env(lager, error_logger_hwm, 500),
-
-%%    ok = application:set_env(lager, extra_sinks,
-%%                             [{access_lager_event,
-%%                               [{handlers,
-%%                                 [{lager_file_backend, [{file, ?LOG_FILENAME_ACCESS}, {level, none},
-%%                                                        {size, 10485760}, {date, "$D0"}, {count, 100},
-%%                                                        {formatter, lager_default_formatter},
-%%                                                        {formatter_config, [message, "\n"]}
-%%                                                       ]}]
-%%                                },
-%%                                {async_threshold, 500},
-%%                                {async_threshold_window, 50}]
-%%                              }]),
-
-    {ok, Handlers} = ?log_handlers(Level),
+    application:set_env(lager, handlers,
+                        [{lager_file_backend, [{file, ?LOG_FILE_NAME_INFO}, {level, none},
+                                               {size, 10485760}, {date, "$H0"},
+                                               {formatter, lager_leofs_formatter},
+                                               {formatter_config, ["[", sev, "]\t", atom_to_list(node()), "\t", leodate, "\t", leotime, "\t", {module, "null"}, ":", {function, "null"}, "\t", {line, "0"}, "\t", message, "\n"]},
+                                               {rotator, leo_logger_rotator}
+                                              ]},
+                         {lager_file_backend, [{file, ?LOG_FILE_NAME_ERROR}, {level, none},
+                                               {size, 10485760}, {date, "$H0"},
+                                               {formatter, lager_leofs_formatter},
+                                               {formatter_config, ["[", sev, "]\t", atom_to_list(node()), "\t", leodate, "\t", leotime, "\t", {module, "null"}, ":", {function, "null"}, "\t", {line, "0"}, "\t", message, "\n"]},
+                                               {rotator, leo_logger_rotator}
+                                              ]}
+                        ]),
 
     lager:start(),
+
+    {ok, Handlers} = ?log_handlers(Level),
     lists:foreach(fun({File, FLevel}) ->
                           lager:set_loglevel(lager_file_backend, File, FLevel)
                   end, Handlers),
 
-%%        case application:get_env(leo_gateway, is_enable_access_log) of
-%%            {ok, true} ->
-%%                ok = lager:set_loglevel(access_lager_event, lager_file_backend, "access.log", info);
-%%            _ ->
-%%                void
-%%        end,
-
+    ets:new(?LOG_ID_TO_SINK_ETS,
+            [named_table, bag, public, {read_concurrency, true}]),
     ok.
 
 -spec(new(LogGroup, LogId, RootPath, LogFileName) ->
@@ -128,21 +113,50 @@ new(RootPath, Level, _Loggers) ->
                      LogId::atom(),
                      RootPath::string(),
                      LogFileName::string()).
-new(LogGroup, LogId, RootPath, LogFileName) ->
-    leo_logger_client_base:new(LogGroup, LogId, RootPath, LogFileName).
+new(LogGroup, LogId, _RootPath, LogFileName) ->
+    lager_app:configure_sink(LogGroup,
+                             [{handlers, [{lager_file_backend, [{file, LogFileName}, {level, info},
+                                                                {size, 10485760}, {date, "$D0"},
+                                                                {formatter, lager_default_formatter},
+                                                                {formatter_config, [message, "\n"]},
+                                                                {rotator, leo_logger_rotator}
+                                                               ]}]},
+                              {async_threshold, 500},
+                              {async_threshold_window, 50}]),
+    ets:insert(?LOG_ID_TO_SINK_ETS, {LogId, {LogGroup, LogFileName}}),
+    ok.
 
 %% @doc Append a message to a file
 -spec(append(LogInfo) ->
              ok when LogInfo::{atom(), #message_log{}}).
-append(LogInfo) ->
-    leo_logger_client_base:append(LogInfo).
+append({LogId, Log} = _LogInfo) ->
+    case catch ets:lookup(?LOG_ID_TO_SINK_ETS, LogId) of
+        {'EXIT', Cause} ->
+            error_logger:error_msg("~p,~p,~p,~p~n",
+                                   [{module, ?MODULE_STRING},
+                                    {function, "append/1"},
+                                    {line, ?LINE}, {body, Cause}]),
+            {error, Cause};
+        %% TODO: Check if lager can log to specific backend
+        [{LogId, {LogGroup, _LogFileName}}] ->
+            {Meta, Fmt, Msg} = convert_log(Log),
+            lager:log(LogGroup, info, Meta, Fmt, Msg);
+        _ ->
+            {error, not_found}
+    end.
 
 %% @doc Update the log level of the info/error logger
 -spec(update_log_level(Level) ->
              ok | {error, any()} when Level::log_level()).
-update_log_level(Val) ->
-    leo_logger_client_message:update_log_level(Val).
-
+update_log_level(Level) ->
+    case ?log_handlers(Level) of
+        {ok, Handlers} ->
+            lists:foreach(fun({File, FLevel}) ->
+                                  lager:set_loglevel(lager_file_backend, File, FLevel)
+                          end, Handlers);
+        Others ->
+            Others
+    end.
 
 %% @doc Convert to Lager Metadata
 -spec(convert_log(Log) ->
@@ -198,5 +212,4 @@ fatal(Log) ->
 
 %% @doc Stop Loggers
 stop() ->
-    application:stop(lager),
-    leo_logger_sup:stop().
+    ok.
