@@ -39,6 +39,7 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
 
+-behaviour(lager_rotator_behaviour).
 %% Lager rotator callbacks
 -export([create_logfile/2, open_logfile/2,
          ensure_logfile/4, rotate_logfile/2]).
