@@ -84,18 +84,20 @@ new(RootPath, Level, _Loggers) ->
 
     application:set_env(lager, handlers,
                         [{lager_file_backend, [{file, ?LOG_FILE_NAME_INFO}, {level, none},
-                                               {size, 10485760}, {date, "$H0"},
+                                               {date, "$H0"},
                                                {formatter, lager_leofs_formatter},
                                                {formatter_config, ["[", sev, "]\t", atom_to_list(node()), "\t", leodate, "\t", leotime, "\t", {module, "null"}, ":", {function, "null"}, "\t", {line, "0"}, "\t", message, "\n"]},
                                                {rotator, leo_logger_rotator}
                                               ]},
                          {lager_file_backend, [{file, ?LOG_FILE_NAME_ERROR}, {level, none},
-                                               {size, 10485760}, {date, "$H0"},
+                                               {sync_on, critical}, {date, "$H0"},
                                                {formatter, lager_leofs_formatter},
                                                {formatter_config, ["[", sev, "]\t", atom_to_list(node()), "\t", leodate, "\t", leotime, "\t", {module, "null"}, ":", {function, "null"}, "\t", {line, "0"}, "\t", message, "\n"]},
                                                {rotator, leo_logger_rotator}
                                               ]}
                         ]),
+    application:set_env(lager, async_threshold, undefined),
+    application:set_env(lager, killer_hwm, 1000),
 
     lager:start(),
 
@@ -121,8 +123,8 @@ new(LogGroup, LogId, _RootPath, LogFileName) ->
                                                                 {formatter_config, [message, "\n"]},
                                                                 {rotator, leo_logger_rotator}
                                                                ]}]},
-                              {async_threshold, 500},
-                              {async_threshold_window, 50}]),
+                              {async_threshold, undefined},
+                              {killer_hwm, 1000}]),
     ets:insert(?LOG_ID_TO_SINK_ETS, {LogId, {LogGroup, LogFileName}}),
     ok.
 
