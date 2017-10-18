@@ -215,6 +215,5 @@ fatal(Log) ->
 %% @doc Stop Loggers
 stop() ->
     ets:delete(?LOG_ID_TO_SINK_ETS),
-    erase('__lager_file_backend_filenames'),
-    application:stop(lager).
+    erase('__lager_file_backend_filenames').
 
