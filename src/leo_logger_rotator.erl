@@ -90,12 +90,7 @@ create_logfile(Name, Buffer) ->
 
 
 open_logfile(Name, Buffer) ->
-    case file:read_link(Name) of
-        {ok, _} ->
-            lager_util:open_logfile(Name, Buffer);
-        _ ->
-            create_logfile(Name, Buffer)
-    end.
+    create_logfile(Name, Buffer).
 
 
 ensure_logfile(Name, FD, Inode, Buffer) ->
