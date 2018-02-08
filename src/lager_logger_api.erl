@@ -33,6 +33,7 @@
          append/1,
          update_log_level/1,
          debug/1, info/1, warn/1, error/1, fatal/1,
+         reset_hwm/0,
          stop/0]).
 
 -define(LOG_FILE_NAME_INFO, "info").
@@ -79,7 +80,9 @@ new(RootPath, Level) ->
 new(RootPath, Level, _Loggers) ->
     application:set_env(lager, log_root, RootPath),
     application:set_env(lager, crash_log, "crash.log"),
-    application:set_env(lager, error_logger_hwm, 500),
+    % set a large number to prevent important log entries from being dropped during the startup.
+    % For more detail, see https://github.com/leo-project/leofs/issues/963
+    application:set_env(lager, error_logger_hwm, 1000),
     error_logger:info_msg("Setup Lager Logger API~n", []),
 
     application:set_env(lager, handlers,
@@ -217,3 +220,11 @@ stop() ->
     ets:delete(?LOG_ID_TO_SINK_ETS),
     erase('__lager_file_backend_filenames').
 
+%% @doc Reset error_logger_hwm
+%%      It should be called once the startup phase finished.
+reset_hwm() ->
+    Handlers = gen_event:which_handlers(lager_event),
+    lists:foreach(fun(Handler) ->
+                      lager:set_loghwm(Handler, 500)
+                  end, Handlers),
+    ok.
