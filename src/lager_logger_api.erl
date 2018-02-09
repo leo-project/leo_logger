@@ -82,7 +82,7 @@ new(RootPath, Level, _Loggers) ->
     application:set_env(lager, crash_log, "crash.log"),
     % set a large number to prevent important log entries from being dropped during the startup.
     % For more detail, see https://github.com/leo-project/leofs/issues/963
-    application:set_env(lager, error_logger_hwm, 1000),
+    application:set_env(lager, error_logger_hwm, ?LOG_HWM_AT_START),
     error_logger:info_msg("Setup Lager Logger API~n", []),
 
     application:set_env(lager, handlers,
@@ -225,6 +225,6 @@ stop() ->
 reset_hwm() ->
     Handlers = gen_event:which_handlers(lager_event),
     lists:foreach(fun(Handler) ->
-                      lager:set_loghwm(Handler, 500)
+                      lager:set_loghwm(Handler, ?LOG_HWM_IN_OPERATION)
                   end, Handlers),
     ok.

@@ -57,6 +57,8 @@
 -define(DEF_ESEARCH_TIMEOUT,  5000).
 -define(DEF_ESEARCH_BULK_DURATION, 3000).
 
+-define(LOG_HWM_AT_START, 1000).
+-define(LOG_HWM_IN_OPERATION, 500).
 
 %%
 -record(logger_state, {appender_type         :: atom(),
