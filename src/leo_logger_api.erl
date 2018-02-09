@@ -33,6 +33,7 @@
          append/1,
          update_log_level/1,
          debug/1, info/1, warn/1, error/1, fatal/1,
+         reset_hwm/0,
          stop/0]).
 
 %%--------------------------------------------------------------------
@@ -112,3 +113,9 @@ fatal(Log) ->
 %% @doc Stop Loggers
 stop() ->
     leo_logger_sup:stop().
+
+%% @doc Reset error_logger_hwm
+%%      It should be called once the startup phase finished.
+reset_hwm() ->
+    % nop for the original leo_logger
+    ok.
