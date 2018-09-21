@@ -23,7 +23,7 @@
 {application, leo_logger,
  [
   {description, "Leo Logger"},
-  {vsn, "1.3.7"},
+  {vsn, "1.3.8"},
   {id, "leo_logger"},
   {registered,   []},
   {applications, [kernel, stdlib]},
