@@ -2,7 +2,7 @@
 %%
 %% Leo Logger
 %%
-%% Copyright (c) 2012-2017 Rakuten, Inc.
+%% Copyright (c) 2012-2018 Rakuten, Inc.
 %%
 %% This file is provided to you under the Apache License,
 %% Version 2.0 (the "License"); you may not use this file
@@ -58,12 +58,25 @@ new(RootPath, Level) ->
                      Loggers::[{atom(), log_appender()}]).
 new(RootPath, Level, Loggers) ->
     %% change error-logger
-    case gen_event:which_handlers(error_logger) of
-        [leo_logger_error_logger_h] ->
+    IsChanged =
+        case catch gen_event:which_handlers('error_logger') of
+            [leo_logger_error_logger_h] ->
+                true;
+            [_|_] ->
+                false;
+            {'EXIT',noproc} ->
+                {ok,_} = gen_event:start({local,'error_logger'}),
+                false;
+            {'EXIT', Other} ->
+                throw(Other)
+        end,
+
+    case IsChanged of
+        true ->
             void;
-        _ ->
-            ok = gen_event:add_sup_handler(error_logger,
-                                           leo_logger_error_logger_h, []),
+        false ->
+            ok = gen_event:add_sup_handler(
+                   'error_logger', leo_logger_error_logger_h, []),
             _ = [begin
                      error_logger:delete_report_handler(X),
                      X
